@@ -7,6 +7,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.List;
 
 @Document(collection = "posts")
 @Getter
@@ -39,7 +40,7 @@ public class Post {
     @Builder.Default
     private long likes = 0L;
 
-    private String [] tags;
+    private List<String> tags;
 
     @CreatedDate
     private Instant createdAt;

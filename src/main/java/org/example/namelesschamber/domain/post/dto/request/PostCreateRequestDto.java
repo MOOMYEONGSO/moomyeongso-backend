@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.example.namelesschamber.domain.post.entity.PostType;
 
+import java.util.List;
+
 public record PostCreateRequestDto(
         @NotBlank
         String title,
@@ -12,6 +14,6 @@ public record PostCreateRequestDto(
         String content,
         @NotNull
         PostType type,
-        String [] tags
+        List<String> tags
 ) {
 }
