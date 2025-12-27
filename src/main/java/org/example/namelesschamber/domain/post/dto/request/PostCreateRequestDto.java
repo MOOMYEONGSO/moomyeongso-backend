@@ -11,6 +11,7 @@ public record PostCreateRequestDto(
         @NotBlank
         String content,
         @NotNull
-        PostType type
+        PostType type,
+        String [] tags
 ) {
 }

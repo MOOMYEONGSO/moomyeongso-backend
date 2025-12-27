@@ -39,6 +39,8 @@ public class Post {
     @Builder.Default
     private long likes = 0L;
 
+    private String [] tags;
+
     @CreatedDate
     private Instant createdAt;
 

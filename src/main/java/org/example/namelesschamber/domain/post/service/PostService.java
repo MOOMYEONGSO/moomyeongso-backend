@@ -67,6 +67,7 @@ public class PostService {
                 .title(request.title())
                 .content(request.content())
                 .type(request.type())
+                .tags(request.tags())
                 .userId(userId)
                 .build());
 
