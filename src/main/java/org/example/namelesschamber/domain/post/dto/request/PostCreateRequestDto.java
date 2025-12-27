@@ -15,4 +15,7 @@ public record PostCreateRequestDto(
         PostType type,
         List<String> tags
 ) {
+    public PostCreateRequestDto {
+        tags = tags == null ? List.of() : tags;
+    }
 }
