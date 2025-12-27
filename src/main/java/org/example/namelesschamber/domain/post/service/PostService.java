@@ -1,6 +1,5 @@
 package org.example.namelesschamber.domain.post.service;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.namelesschamber.common.exception.CustomException;
