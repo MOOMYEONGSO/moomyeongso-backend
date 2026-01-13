@@ -162,8 +162,8 @@ public class PostService {
 
         if (firstRead) {
             incrementViews(postId);
-        } else {
-            if (chargedCoin) coinService.refund(userId, 1);
+        } else if (chargedCoin) {
+            coinService.refund(userId, 1);
         }
 
         int finalCoin = coinService.getCoin(userId);
