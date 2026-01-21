@@ -23,8 +23,8 @@ public class AdminPostService {
     public List<AdminPostResponseDto> getPosts(PostType type) {
         List<Post> posts =
                 (type == null)
-                ? postRepository.findAllByOrderByCreatedAtDesc()
-                : postRepository.findAllByTypeOrderByCreatedAtDesc(type);
+                        ? postRepository.findAllByIsDeletedFalseOrderByCreatedAtDesc()
+                        : postRepository.findAllByTypeAndIsDeletedFalseOrderByCreatedAtDesc(type);
 
         return posts.stream()
                 .map(AdminPostResponseDto::from)

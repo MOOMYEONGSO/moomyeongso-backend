@@ -44,18 +44,20 @@ public class PostService {
     @Transactional(readOnly = true)
     public PostPreviewListResponse getPostPreviews(String userId) {
         int coin = coinService.getCoin(userId);
-        List<PostPreviewResponseDto> posts = postRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(PostPreviewResponseDto::from)
-                .toList();
+        List<PostPreviewResponseDto> posts =
+                postRepository.findAllByIsDeletedFalseOrderByCreatedAtDesc().stream()
+                        .map(PostPreviewResponseDto::from)
+                        .toList();
         return PostPreviewListResponse.of(posts, coin);
     }
 
     @Transactional(readOnly = true)
     public PostPreviewListResponse getPostPreviews(PostType type, String userId) {
         int coin = coinService.getCoin(userId);
-        List<PostPreviewResponseDto> posts = postRepository.findAllByTypeOrderByCreatedAtDesc(type).stream()
-                .map(PostPreviewResponseDto::from)
-                .toList();
+        List<PostPreviewResponseDto> posts =
+                postRepository.findAllByTypeAndIsDeletedFalseOrderByCreatedAtDesc(type).stream()
+                        .map(PostPreviewResponseDto::from)
+                        .toList();
         return PostPreviewListResponse.of(posts, coin);
     }
 

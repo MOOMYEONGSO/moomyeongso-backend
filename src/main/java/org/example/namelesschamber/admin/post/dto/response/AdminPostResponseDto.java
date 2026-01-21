@@ -6,7 +6,7 @@ import org.example.namelesschamber.domain.post.entity.PostType;
 import java.time.Instant;
 
 public record AdminPostResponseDto(
-        String id,
+        String postId,
         String title,
         String content,
         String userId,
