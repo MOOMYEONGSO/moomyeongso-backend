@@ -14,4 +14,6 @@ public interface PostRepository extends MongoRepository<Post, String> {
     long countByTypeAndCreatedAtBetween(PostType type, Instant start, Instant end);
     long countByType(PostType type);
     long countByUserId(String userId);
+    List<Post> findAllByIsDeletedFalseOrderByCreatedAtDesc();
+    List<Post> findAllByTypeAndIsDeletedFalseOrderByCreatedAtDesc(PostType type);
 }
