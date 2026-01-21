@@ -141,24 +141,30 @@ public class PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
-        boolean charged = coinService.chargeIfEnough(userId, 1);
+        boolean isOwner = userId.equals(post.getUserId());
 
-        if (!charged){
-            log.warn("User {} does not have enough coins to read post {}", userId, postId);
-            throw new CustomException(ErrorCode.NOT_ENOUGH_COIN);
+        boolean chargedCoin = false;
+
+        if (!isOwner) {
+            chargedCoin = coinService.chargeIfEnough(userId, 1);
+
+            if (!chargedCoin) {
+                log.warn("User {} does not have enough coins to read post {}", userId, postId);
+                throw new CustomException(ErrorCode.NOT_ENOUGH_COIN);
+            }
         }
 
         boolean firstRead;
         try {
              firstRead = readHistoryService.record(userId, postId);
         } catch (RuntimeException ex) {
-            coinService.refund(userId, 1);
+            if (chargedCoin) coinService.refund(userId, 1);
             throw ex;
         }
 
         if (firstRead) {
             incrementViews(postId);
-        } else {
+        } else if (chargedCoin) {
             coinService.refund(userId, 1);
         }
 
