@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.namelesschamber.domain.post.dto.response.PostPreviewListResponse;
 import org.example.namelesschamber.domain.post.dto.response.PostPreviewResponseDto;
 import org.example.namelesschamber.domain.post.entity.Post;
+import org.example.namelesschamber.domain.post.entity.PostStatus;
 import org.example.namelesschamber.domain.post.repository.PostRepository;
 import org.example.namelesschamber.domain.readhistory.entity.ReadHistory;
 import org.example.namelesschamber.domain.readhistory.repository.ReadHistoryRepository;
@@ -45,7 +46,8 @@ public class ReadHistoryService {
 
         List<PostPreviewResponseDto> posts = histories.stream()
                 .map(history -> postMap.get(history.getPostId()))
-                .filter(Objects::nonNull) // 삭제된 게시글은 스킵
+                .filter(Objects::nonNull)
+                .filter(post -> post.getStatus() == PostStatus.ACTIVE)
                 .map(PostPreviewResponseDto::from)
                 .toList();
 

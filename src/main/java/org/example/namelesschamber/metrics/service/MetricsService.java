@@ -2,6 +2,7 @@ package org.example.namelesschamber.metrics.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.namelesschamber.domain.post.entity.PostStatus;
 import org.example.namelesschamber.domain.post.entity.PostType;
 import org.example.namelesschamber.domain.post.repository.PostRepository;
 import org.example.namelesschamber.domain.user.entity.UserRole;
@@ -29,12 +30,15 @@ public class MetricsService {
         Instant start = todayKst.atStartOfDay(KST).toInstant();
         Instant end   = todayKst.plusDays(1).atStartOfDay(KST).toInstant();
 
-        long shortPosts = postRepository.countByTypeAndCreatedAtBetween(PostType.SHORT, start, end);
-        long shortTotalPosts = postRepository.countByType(PostType.SHORT);
-        long longPosts = postRepository.countByTypeAndCreatedAtBetween(PostType.LONG, start, end);
-        long longTotalPosts = postRepository.countByType(PostType.LONG);
-        long todayPosts = postRepository.countByTypeAndCreatedAtBetween(PostType.TODAY, start, end);
-        long todayTotalPosts = postRepository.countByType(PostType.TODAY);
+        long shortPosts = postRepository.countByTypeAndStatusAndCreatedAtBetween(
+                PostType.SHORT, PostStatus.ACTIVE, start, end);
+        long shortTotalPosts = postRepository.countByTypeAndStatus(PostType.SHORT, PostStatus.ACTIVE);
+        long longPosts = postRepository.countByTypeAndStatusAndCreatedAtBetween(
+                PostType.LONG, PostStatus.ACTIVE, start, end);
+        long longTotalPosts = postRepository.countByTypeAndStatus(PostType.LONG, PostStatus.ACTIVE);
+        long todayPosts = postRepository.countByTypeAndStatusAndCreatedAtBetween(
+                PostType.TODAY, PostStatus.ACTIVE, start, end);
+        long todayTotalPosts = postRepository.countByTypeAndStatus(PostType.TODAY, PostStatus.ACTIVE);
         long members = userRepository.countByUserRoleAndCreatedAtBetween(UserRole.USER, start, end);
         long anonymous = userRepository.countByUserRoleAndCreatedAtBetween(UserRole.ANONYMOUS, start, end);
         long totalMembers =  userRepository.countByUserRole(UserRole.USER);

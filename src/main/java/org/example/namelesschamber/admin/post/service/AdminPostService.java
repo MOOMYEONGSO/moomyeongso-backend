@@ -6,6 +6,7 @@ import org.example.namelesschamber.admin.post.dto.response.AdminPostResponseDto;
 import org.example.namelesschamber.common.exception.CustomException;
 import org.example.namelesschamber.common.exception.ErrorCode;
 import org.example.namelesschamber.domain.post.entity.Post;
+import org.example.namelesschamber.domain.post.entity.PostStatus;
 import org.example.namelesschamber.domain.post.entity.PostType;
 import org.example.namelesschamber.domain.post.repository.PostRepository;
 import org.springframework.stereotype.Service;
@@ -23,8 +24,8 @@ public class AdminPostService {
     public List<AdminPostResponseDto> getPosts(PostType type) {
         List<Post> posts =
                 (type == null)
-                        ? postRepository.findAllByIsDeletedFalseOrderByCreatedAtDesc()
-                        : postRepository.findAllByTypeAndIsDeletedFalseOrderByCreatedAtDesc(type);
+                        ? postRepository.findAllByStatusOrderByCreatedAtDesc(PostStatus.ACTIVE)
+                        : postRepository.findAllByTypeAndStatusOrderByCreatedAtDesc(type, PostStatus.ACTIVE);
 
         return posts.stream()
                 .map(AdminPostResponseDto::from)

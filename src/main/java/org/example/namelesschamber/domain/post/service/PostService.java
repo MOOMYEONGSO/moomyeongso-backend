@@ -11,6 +11,7 @@ import org.example.namelesschamber.domain.post.dto.response.PostPreviewListRespo
 import org.example.namelesschamber.domain.post.dto.response.PostPreviewResponseDto;
 import org.example.namelesschamber.domain.post.entity.FirstWriteGate;
 import org.example.namelesschamber.domain.post.entity.Post;
+import org.example.namelesschamber.domain.post.entity.PostStatus;
 import org.example.namelesschamber.domain.post.entity.PostType;
 import org.example.namelesschamber.domain.post.repository.PostRepository;
 import org.example.namelesschamber.domain.readhistory.service.ReadHistoryService;
@@ -45,7 +46,7 @@ public class PostService {
     public PostPreviewListResponse getPostPreviews(String userId) {
         int coin = coinService.getCoin(userId);
         List<PostPreviewResponseDto> posts =
-                postRepository.findAllByIsDeletedFalseOrderByCreatedAtDesc().stream()
+                postRepository.findAllByStatusOrderByCreatedAtDesc(PostStatus.ACTIVE).stream()
                         .map(PostPreviewResponseDto::from)
                         .toList();
         return PostPreviewListResponse.of(posts, coin);
@@ -55,35 +56,30 @@ public class PostService {
     public PostPreviewListResponse getPostPreviews(PostType type, String userId) {
         int coin = coinService.getCoin(userId);
         List<PostPreviewResponseDto> posts =
-                postRepository.findAllByTypeAndIsDeletedFalseOrderByCreatedAtDesc(type).stream()
+                postRepository.findAllByTypeAndStatusOrderByCreatedAtDesc(type, PostStatus.ACTIVE).stream()
                         .map(PostPreviewResponseDto::from)
                         .toList();
         return PostPreviewListResponse.of(posts, coin);
     }
 
+    @Transactional("mongoTransactionManager")
     public PostCreateResponseDto createPost(PostCreateRequestDto request, String userId) {
         request.type().validateContentLength(request.content());
 
-        Post post = postRepository.save(Post.builder()
+        Post post = Post.builder()
                 .title(request.title())
                 .content(request.content())
                 .type(request.type())
                 .tags(request.tags())
                 .userId(userId)
-                .build());
+                .status(PostStatus.PENDING)
+                .build();
 
-        // 코인 지급 보상 트랜잭션
-        int coin;
-        try {
-            coin = coinService.rewardForPost(userId, 1);
-        } catch (RuntimeException ex) {
-            try {
-                postRepository.deleteById(post.getId());
-            } catch (RuntimeException cleanupEx) {
-                log.error("Compensation(delete post) failed. postId={}, userId={}", post.getId(), userId, cleanupEx);
-            }
-            throw ex;
-        }
+        post = postRepository.save(post);
+
+        int coin = coinService.rewardForPost(userId, 1);
+        post.markActive();
+        postRepository.save(post);
 
         boolean isFirstToday;
         try {
@@ -136,10 +132,15 @@ public class PostService {
         return (before == null);
     }
 
+    @Transactional("mongoTransactionManager")
     public PostDetailResponseDto getPostById(String postId, String userId) {
 
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+        if (post.getStatus() != PostStatus.ACTIVE) {
+            throw new CustomException(ErrorCode.POST_NOT_FOUND);
+        }
 
         boolean isOwner = userId.equals(post.getUserId());
 
@@ -176,7 +177,7 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public List<PostPreviewResponseDto> getMyPosts(String userId) {
-        return postRepository.findAllByUserIdOrderByCreatedAtDesc(userId).stream()
+        return postRepository.findAllByUserIdAndStatusOrderByCreatedAtDesc(userId, PostStatus.ACTIVE).stream()
                 .map(PostPreviewResponseDto::from)
                 .toList();
     }

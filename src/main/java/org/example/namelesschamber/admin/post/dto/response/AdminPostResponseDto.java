@@ -1,6 +1,7 @@
 package org.example.namelesschamber.admin.post.dto.response;
 
 import org.example.namelesschamber.domain.post.entity.Post;
+import org.example.namelesschamber.domain.post.entity.PostStatus;
 import org.example.namelesschamber.domain.post.entity.PostType;
 
 import java.time.Instant;
@@ -11,7 +12,7 @@ public record AdminPostResponseDto(
         String content,
         String userId,
         PostType type,
-        boolean isDeleted,
+        PostStatus status,
         long views,
         long likes,
         Instant createdAt
@@ -23,7 +24,7 @@ public record AdminPostResponseDto(
                 post.getContent(),
                 post.getUserId(),
                 post.getType(),
-                post.isDeleted(),
+                post.getStatus(),
                 post.getViews(),
                 post.getLikes(),
                 post.getCreatedAt()

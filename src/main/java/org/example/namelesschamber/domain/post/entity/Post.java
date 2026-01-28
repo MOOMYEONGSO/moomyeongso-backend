@@ -33,7 +33,7 @@ public class Post {
     private PostType type;
 
     @Builder.Default
-    private boolean isDeleted = false;
+    private PostStatus status = PostStatus.ACTIVE;
 
     @Builder.Default
     private long views = 0L;
@@ -51,6 +51,14 @@ public class Post {
         this.content = content;
     }
     public void deleteByAdmin() {
-        this.isDeleted = true;
+        this.status = PostStatus.DELETED;
+    }
+
+    public void markPending() {
+        this.status = PostStatus.PENDING;
+    }
+
+    public void markActive() {
+        this.status = PostStatus.ACTIVE;
     }
 }
