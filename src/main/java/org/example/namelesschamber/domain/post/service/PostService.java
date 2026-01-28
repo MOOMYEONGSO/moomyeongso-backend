@@ -66,20 +66,16 @@ public class PostService {
     public PostCreateResponseDto createPost(PostCreateRequestDto request, String userId) {
         request.type().validateContentLength(request.content());
 
-        Post post = Post.builder()
+        int coin = coinService.rewardForPost(userId, 1);
+
+        Post post = postRepository.save(Post.builder()
                 .title(request.title())
                 .content(request.content())
                 .type(request.type())
                 .tags(request.tags())
                 .userId(userId)
-                .status(PostStatus.PENDING)
-                .build();
-
-        post = postRepository.save(post);
-
-        int coin = coinService.rewardForPost(userId, 1);
-        post.markActive();
-        postRepository.save(post);
+                .status(PostStatus.ACTIVE)
+                .build());
 
         boolean isFirstToday;
         try {
@@ -135,38 +131,23 @@ public class PostService {
     @Transactional("mongoTransactionManager")
     public PostDetailResponseDto getPostById(String postId, String userId) {
 
-        Post post = postRepository.findById(postId)
+        Post post = postRepository.findByIdAndStatus(postId, PostStatus.ACTIVE)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-
-        if (post.getStatus() != PostStatus.ACTIVE) {
-            throw new CustomException(ErrorCode.POST_NOT_FOUND);
-        }
 
         boolean isOwner = userId.equals(post.getUserId());
 
-        boolean chargedCoin = false;
+        boolean firstRead = readHistoryService.record(userId, postId);
 
-        if (!isOwner) {
-            chargedCoin = coinService.chargeIfEnough(userId, 1);
-
+        if (firstRead && !isOwner) {
+            boolean chargedCoin = coinService.chargeIfEnough(userId, 1);
             if (!chargedCoin) {
                 log.warn("User {} does not have enough coins to read post {}", userId, postId);
                 throw new CustomException(ErrorCode.NOT_ENOUGH_COIN);
             }
         }
 
-        boolean firstRead;
-        try {
-             firstRead = readHistoryService.record(userId, postId);
-        } catch (RuntimeException ex) {
-            if (chargedCoin) coinService.refund(userId, 1);
-            throw ex;
-        }
-
         if (firstRead) {
             incrementViews(postId);
-        } else if (chargedCoin) {
-            coinService.refund(userId, 1);
         }
 
         int finalCoin = coinService.getCoin(userId);

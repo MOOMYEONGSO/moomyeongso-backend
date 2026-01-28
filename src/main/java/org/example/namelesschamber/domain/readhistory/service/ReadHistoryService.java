@@ -1,6 +1,5 @@
 package org.example.namelesschamber.domain.readhistory.service;
 
-import org.springframework.dao.DuplicateKeyException;
 import lombok.RequiredArgsConstructor;
 import org.example.namelesschamber.domain.post.dto.response.PostPreviewListResponse;
 import org.example.namelesschamber.domain.post.dto.response.PostPreviewResponseDto;
@@ -10,6 +9,10 @@ import org.example.namelesschamber.domain.post.repository.PostRepository;
 import org.example.namelesschamber.domain.readhistory.entity.ReadHistory;
 import org.example.namelesschamber.domain.readhistory.repository.ReadHistoryRepository;
 import org.example.namelesschamber.domain.user.service.CoinService;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +30,7 @@ public class ReadHistoryService {
     private final ReadHistoryRepository readHistoryRepository;
     private final PostRepository postRepository;
     private final CoinService coinService;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * 내가 열람한 일기 목록 조회
@@ -66,11 +71,12 @@ public class ReadHistoryService {
      * 열람 기록 저장
      */
     public boolean record(String userId, String postId) {
-        try {
-            readHistoryRepository.save(ReadHistory.of(userId, postId));
-            return true;
-        } catch (DuplicateKeyException e) {
-            return false;
-        }
+        Query q = Query.query(Criteria.where("userId").is(userId).and("postId").is(postId));
+        Update u = new Update()
+                .setOnInsert("userId", userId)
+                .setOnInsert("postId", postId)
+                .setOnInsert("readAt", LocalDateTime.now())
+                .set("readAt", LocalDateTime.now());
+        return mongoTemplate.upsert(q, u, ReadHistory.class).getUpsertedId() != null;
     }
 }
