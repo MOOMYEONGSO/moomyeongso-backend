@@ -14,6 +14,7 @@ import org.example.moomyeongso.domain.post.entity.Post;
 import org.example.moomyeongso.domain.post.entity.PostStatus;
 import org.example.moomyeongso.domain.post.entity.PostType;
 import org.example.moomyeongso.domain.post.repository.PostRepository;
+import org.example.moomyeongso.domain.post.repository.RandomPostFinder;
 import org.example.moomyeongso.domain.readhistory.service.ReadHistoryService;
 import org.example.moomyeongso.domain.user.service.CoinService;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
@@ -41,8 +42,8 @@ public class PostService {
     private final CoinService coinService;
     private final CalendarService calendarService;
     private final MongoTemplate mongoTemplate;
+    private final RandomPostFinder randomPostFinder;
 
-    @Transactional(readOnly = true)
     public PostPreviewListResponse getPostPreviews(String userId) {
         int coin = coinService.getCoin(userId);
         List<PostPreviewResponseDto> posts =
@@ -52,7 +53,6 @@ public class PostService {
         return PostPreviewListResponse.of(posts, coin);
     }
 
-    @Transactional(readOnly = true)
     public PostPreviewListResponse getPostPreviews(PostType type, String userId) {
         int coin = coinService.getCoin(userId);
         List<PostPreviewResponseDto> posts =
@@ -156,11 +156,22 @@ public class PostService {
 
     }
 
-    @Transactional(readOnly = true)
     public List<PostPreviewResponseDto> getMyPosts(String userId) {
         return postRepository.findAllByUserIdAndStatusOrderByCreatedAtDesc(userId, PostStatus.ACTIVE).stream()
                 .map(PostPreviewResponseDto::from)
                 .toList();
+    }
+
+    public PostPreviewListResponse getRandomPostPreviews(int count, String userId) {
+        if (count <= 0) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+
+        int coin = coinService.getCoin(userId);
+        List<PostPreviewResponseDto> posts = randomPostFinder.findRandomByStatus(PostStatus.ACTIVE, count).stream()
+                .map(PostPreviewResponseDto::from)
+                .toList();
+        return PostPreviewListResponse.of(posts, coin);
     }
 
     private void incrementViews(String postId) {

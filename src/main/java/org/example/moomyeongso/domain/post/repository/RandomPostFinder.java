@@ -5,9 +5,12 @@ import org.springframework.stereotype.Component;
 
 import org.example.moomyeongso.domain.post.entity.Post;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.example.moomyeongso.domain.post.entity.PostStatus;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.query.Criteria;
 
+import java.util.List;
 import java.util.Optional;
 @Component
 @RequiredArgsConstructor
@@ -27,5 +30,20 @@ public class RandomPostFinder {
         );
 
         return result.getMappedResults().stream().findFirst();
+    }
+
+    public List<Post> findRandomByStatus(PostStatus status, int size) {
+        Aggregation aggregation = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("status").is(status)),
+                Aggregation.sample(size)
+        );
+
+        AggregationResults<Post> result = mongoTemplate.aggregate(
+                aggregation,
+                Post.class,
+                Post.class
+        );
+
+        return result.getMappedResults();
     }
 }

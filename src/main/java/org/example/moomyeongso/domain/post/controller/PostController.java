@@ -44,6 +44,19 @@ public class PostController {
 
         return ApiResponse.success(HttpStatus.OK, response);
     }
+
+    @Operation(
+            summary = "무작위 글 조회",
+            description = "요청한 갯수만큼 무작위 게시글 미리보기 리스트를 반환합니다."
+    )
+    @GetMapping("/posts/random")
+    public ResponseEntity<ApiResponse<PostPreviewListResponse>> getRandomPosts(
+            @RequestParam(defaultValue = "3") int count) {
+
+        String userId = SecurityUtils.getCurrentSubject();
+        PostPreviewListResponse response = postService.getRandomPostPreviews(count, userId);
+        return ApiResponse.success(HttpStatus.OK, response);
+    }
     @Operation(
             summary = "글 작성",
             description = "새로운 게시글을 작성합니다"
@@ -79,4 +92,3 @@ public class PostController {
     }
 
 }
-

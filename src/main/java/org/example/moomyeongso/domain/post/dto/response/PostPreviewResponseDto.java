@@ -3,6 +3,7 @@ package org.example.moomyeongso.domain.post.dto.response;
 import org.example.moomyeongso.domain.post.entity.Post;
 
 import java.time.Instant;
+import java.util.List;
 
 public record PostPreviewResponseDto(
         String postId,
@@ -10,6 +11,7 @@ public record PostPreviewResponseDto(
         String title,
         String contentPreview,
         int contentLength,
+        List<String> tags,
         long likes,
         long views,
         Instant createdAt
@@ -30,6 +32,7 @@ public record PostPreviewResponseDto(
                 post.getTitle(),
                 preview,
                 content.length(),
+                post.getTags(),
                 post.getLikes(),
                 post.getViews(),
                 post.getCreatedAt()
