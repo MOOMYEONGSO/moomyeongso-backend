@@ -191,13 +191,15 @@ public class PostService {
     }
 
     private List<PostPreviewResponseDto> fetchRandomPostPreviews(int count, String tag) {
-        return (tag == null)
-                ? randomPostFinder.findRandomByStatus(PostStatus.ACTIVE, count).stream()
-                        .map(PostPreviewResponseDto::from)
-                        .toList()
-                : randomPostFinder.findRandomByStatusAndTag(PostStatus.ACTIVE, tag, count).stream()
-                        .map(PostPreviewResponseDto::from)
-                        .toList();
+        List<Post> posts;
+        if (tag == null) {
+            posts = randomPostFinder.findRandomByStatus(PostStatus.ACTIVE, count);
+        } else {
+            posts = randomPostFinder.findRandomByStatusAndTag(PostStatus.ACTIVE, tag, count);
+        }
+        return posts.stream()
+                .map(PostPreviewResponseDto::from)
+                .toList();
     }
 
     private String selectTagByPriority(List<String> tags, int index) {
