@@ -12,6 +12,7 @@ import org.example.moomyeongso.domain.post.dto.response.PostPreviewResponseDto;
 import org.example.moomyeongso.domain.post.entity.FirstWriteGate;
 import org.example.moomyeongso.domain.post.entity.Post;
 import org.example.moomyeongso.domain.post.entity.PostStatus;
+import org.example.moomyeongso.domain.post.entity.PostTag;
 import org.example.moomyeongso.domain.post.entity.PostType;
 import org.example.moomyeongso.domain.post.repository.PostRepository;
 import org.example.moomyeongso.domain.post.repository.RandomPostFinder;
@@ -36,7 +37,6 @@ import java.util.List;
 public class PostService {
 
     private final ZoneId KST = ZoneId.of("Asia/Seoul");
-
     private final PostRepository postRepository;
     private final ReadHistoryService readHistoryService;
     private final CoinService coinService;
@@ -172,6 +172,43 @@ public class PostService {
                 .map(PostPreviewResponseDto::from)
                 .toList();
         return PostPreviewListResponse.of(posts, coin);
+    }
+
+    public PostPreviewListResponse getRandomPostPreviews(int count, List<String> tags, int reroll, String userId) {
+        if (count <= 0) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+
+        int coin = coinService.getCoin(userId);
+        String selectedTag = selectTagForStep(tags, reroll);
+        List<PostPreviewResponseDto> posts = fetchRandomPostPreviews(count, selectedTag);
+        return PostPreviewListResponse.of(posts, coin);
+    }
+
+    private String selectTagForStep(List<String> tags, int reroll) {
+        int index = reroll <= 0 ? 0 : reroll == 1 ? 1 : -1;
+        return selectTagByPriority(tags, index);
+    }
+
+    private List<PostPreviewResponseDto> fetchRandomPostPreviews(int count, String tag) {
+        List<Post> posts;
+        if (tag == null) {
+            posts = randomPostFinder.findRandomByStatus(PostStatus.ACTIVE, count);
+        } else {
+            posts = randomPostFinder.findRandomByStatusAndTag(PostStatus.ACTIVE, tag, count);
+        }
+        return posts.stream()
+                .map(PostPreviewResponseDto::from)
+                .toList();
+    }
+
+    private String selectTagByPriority(List<String> tags, int index) {
+        if (index < 0 || tags == null || tags.isEmpty()) {
+            return null;
+        }
+
+        List<String> sorted = PostTag.sortByPriority(tags);
+        return index < sorted.size() ? sorted.get(index) : null;
     }
 
     private void incrementViews(String postId) {

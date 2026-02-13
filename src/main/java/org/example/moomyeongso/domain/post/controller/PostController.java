@@ -51,10 +51,13 @@ public class PostController {
     )
     @GetMapping("/posts/random")
     public ResponseEntity<ApiResponse<PostPreviewListResponse>> getRandomPosts(
-            @RequestParam(defaultValue = "3") int count) {
+            @RequestParam(defaultValue = "3") int count,
+            @RequestParam(required = false) List<String> tags,
+            @RequestParam(defaultValue = "0") int reroll) {
 
         String userId = SecurityUtils.getCurrentSubject();
-        PostPreviewListResponse response = postService.getRandomPostPreviews(count, userId);
+        PostPreviewListResponse response =
+                postService.getRandomPostPreviews(count, tags, reroll, userId);
         return ApiResponse.success(HttpStatus.OK, response);
     }
     @Operation(

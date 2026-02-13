@@ -46,4 +46,22 @@ public class RandomPostFinder {
 
         return result.getMappedResults();
     }
+
+    public List<Post> findRandomByStatusAndTag(PostStatus status, String tag, int size) {
+        Aggregation aggregation = Aggregation.newAggregation(
+                Aggregation.match(
+                        Criteria.where("status").is(status)
+                                .and("tags").is(tag)
+                ),
+                Aggregation.sample(size)
+        );
+
+        AggregationResults<Post> result = mongoTemplate.aggregate(
+                aggregation,
+                Post.class,
+                Post.class
+        );
+
+        return result.getMappedResults();
+    }
 }
