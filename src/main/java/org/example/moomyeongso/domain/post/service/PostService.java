@@ -47,7 +47,7 @@ public class PostService {
     public PostPreviewListResponse getPostPreviews(String userId) {
         int coin = coinService.getCoin(userId);
         List<PostPreviewResponseDto> posts =
-                postRepository.findAllByStatusOrderByCreatedAtDesc(PostStatus.ACTIVE).stream()
+                postRepository.findAllByStatusAndUserIdNotOrderByCreatedAtDesc(PostStatus.ACTIVE, userId).stream()
                         .map(PostPreviewResponseDto::from)
                         .toList();
         return PostPreviewListResponse.of(posts, coin);
@@ -56,7 +56,7 @@ public class PostService {
     public PostPreviewListResponse getPostPreviews(PostType type, String userId) {
         int coin = coinService.getCoin(userId);
         List<PostPreviewResponseDto> posts =
-                postRepository.findAllByTypeAndStatusOrderByCreatedAtDesc(type, PostStatus.ACTIVE).stream()
+                postRepository.findAllByTypeAndStatusAndUserIdNotOrderByCreatedAtDesc(type, PostStatus.ACTIVE, userId).stream()
                         .map(PostPreviewResponseDto::from)
                         .toList();
         return PostPreviewListResponse.of(posts, coin);
@@ -162,18 +162,6 @@ public class PostService {
                 .toList();
     }
 
-    public PostPreviewListResponse getRandomPostPreviews(int count, String userId) {
-        if (count <= 0) {
-            throw new CustomException(ErrorCode.INVALID_INPUT);
-        }
-
-        int coin = coinService.getCoin(userId);
-        List<PostPreviewResponseDto> posts = randomPostFinder.findRandomByStatus(PostStatus.ACTIVE, count).stream()
-                .map(PostPreviewResponseDto::from)
-                .toList();
-        return PostPreviewListResponse.of(posts, coin);
-    }
-
     public PostPreviewListResponse getRandomPostPreviews(int count, List<String> tags, int reroll, String userId) {
         if (count <= 0) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
@@ -181,7 +169,7 @@ public class PostService {
 
         int coin = coinService.getCoin(userId);
         String selectedTag = selectTagForStep(tags, reroll);
-        List<PostPreviewResponseDto> posts = fetchRandomPostPreviews(count, selectedTag);
+        List<PostPreviewResponseDto> posts = fetchRandomPostPreviews(count, selectedTag, userId);
         return PostPreviewListResponse.of(posts, coin);
     }
 
@@ -190,12 +178,12 @@ public class PostService {
         return selectTagByPriority(tags, index);
     }
 
-    private List<PostPreviewResponseDto> fetchRandomPostPreviews(int count, String tag) {
+    private List<PostPreviewResponseDto> fetchRandomPostPreviews(int count, String tag, String userId) {
         List<Post> posts;
         if (tag == null) {
-            posts = randomPostFinder.findRandomByStatus(PostStatus.ACTIVE, count);
+            posts = randomPostFinder.findRandomByStatusExcludingUser(PostStatus.ACTIVE, count, userId);
         } else {
-            posts = randomPostFinder.findRandomByStatusAndTag(PostStatus.ACTIVE, tag, count);
+            posts = randomPostFinder.findRandomByStatusAndTagExcludingUser(PostStatus.ACTIVE, tag, count, userId);
         }
         return posts.stream()
                 .map(PostPreviewResponseDto::from)

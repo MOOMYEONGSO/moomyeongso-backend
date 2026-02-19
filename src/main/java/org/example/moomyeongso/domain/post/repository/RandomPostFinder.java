@@ -18,23 +18,12 @@ public class RandomPostFinder {
 
     private final MongoTemplate mongoTemplate;
 
-    public Optional<Post> find() {
+    public List<Post> findRandomByStatusExcludingUser(PostStatus status, int size, String excludedUserId) {
         Aggregation aggregation = Aggregation.newAggregation(
-                Aggregation.sample(1)
-        );
-
-        AggregationResults<Post> result = mongoTemplate.aggregate(
-                aggregation,
-                Post.class,
-                Post.class
-        );
-
-        return result.getMappedResults().stream().findFirst();
-    }
-
-    public List<Post> findRandomByStatus(PostStatus status, int size) {
-        Aggregation aggregation = Aggregation.newAggregation(
-                Aggregation.match(Criteria.where("status").is(status)),
+                Aggregation.match(
+                        Criteria.where("status").is(status)
+                                .and("userId").ne(excludedUserId)
+                ),
                 Aggregation.sample(size)
         );
 
@@ -47,11 +36,12 @@ public class RandomPostFinder {
         return result.getMappedResults();
     }
 
-    public List<Post> findRandomByStatusAndTag(PostStatus status, String tag, int size) {
+    public List<Post> findRandomByStatusAndTagExcludingUser(PostStatus status, String tag, int size, String excludedUserId) {
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.match(
                         Criteria.where("status").is(status)
                                 .and("tags").is(tag)
+                                .and("userId").ne(excludedUserId)
                 ),
                 Aggregation.sample(size)
         );
