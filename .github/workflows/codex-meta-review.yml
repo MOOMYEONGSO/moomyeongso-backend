@@ -1,0 +1,43 @@
+name: codex-meta-review
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - edited
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: codex-meta-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  meta-review:
+    if: ${{ github.event.pull_request.draft == false && github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - name: Run Codex meta review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+          GEMINI_BOT_LOGINS: ${{ vars.GEMINI_BOT_LOGINS }}
+          WAIT_FOR_GEMINI_SECONDS: ${{ vars.WAIT_FOR_GEMINI_SECONDS }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          API_URL: ${{ github.api_url }}
+          SERVER_URL: ${{ github.server_url }}
+        run: node .github/scripts/codex-meta-review.mjs

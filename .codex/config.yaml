@@ -1,0 +1,40 @@
+language: ko-KR
+
+meta_review:
+  enabled: true
+  title: codex meta review
+  source:
+    gemini_summary: true
+    gemini_comments: true
+    fallback_to_pr_diff_when_gemini_empty: true
+  processing:
+    deduplicate: true
+    group_similar_issues: true
+    re_evaluate_severity: true
+    classify_findings:
+      - real_defect
+      - risk_concern
+      - style_or_preference
+    weak_evidence_label: needs verification
+  output:
+    strict_format: true
+    sections:
+      - merge blocker (must-fix)
+      - should-fix
+      - optional
+      - gemini validation summary
+      - additional risks or test suggestions
+
+comment_management:
+  single_comment_per_pr: true
+  update_existing_comment: true
+  marker: "<!-- codex-meta-review -->"
+
+stability:
+  prevent_infinite_bot_loops: true
+  prevent_self_response: true
+  deterministic_ordering: true
+  safe_for_large_comment_volume: true
+  ignore_authors:
+    - codex[bot]
+    - github-actions[bot]
