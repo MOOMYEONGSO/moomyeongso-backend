@@ -105,7 +105,7 @@ public class AuthService {
                     .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         }
 
-        migrateAnonymousDataIfNeeded(anonymousSubject, user.getId());
+        migrateAnonymousDataIfNeeded(anonymousSubject, user);
         user = userRepository.findById(user.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -149,14 +149,14 @@ public class AuthService {
         refreshTokenRepository.deleteByUserId(userId);
     }
 
-    private void migrateAnonymousDataIfNeeded(String anonymousUserId, String memberUserId) {
-        if (anonymousUserId == null || anonymousUserId.equals(memberUserId)) {
+    private void migrateAnonymousDataIfNeeded(String anonymousUserId, User memberUser) {
+        if (anonymousUserId == null || memberUser == null || anonymousUserId.equals(memberUser.getId())) {
             return;
         }
 
         migrationService.consumeAnonymousUserForMigration(anonymousUserId)
                 .ifPresent(anonymousUser -> {
-                    migrationService.migrateAnonymousData(anonymousUser, memberUserId);
+                    migrationService.migrateAnonymousData(anonymousUser, memberUser);
                     refreshTokenRepository.deleteByUserId(anonymousUser.getId());
                 });
     }

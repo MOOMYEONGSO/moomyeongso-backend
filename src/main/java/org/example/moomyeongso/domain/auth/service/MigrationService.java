@@ -2,13 +2,14 @@ package org.example.moomyeongso.domain.auth.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.moomyeongso.common.exception.CustomException;
+import org.example.moomyeongso.common.exception.ErrorCode;
 import org.example.moomyeongso.domain.post.entity.Post;
 import org.example.moomyeongso.domain.readhistory.entity.ReadHistory;
 import org.example.moomyeongso.domain.readhistory.repository.ReadHistoryRepository;
 import org.example.moomyeongso.domain.user.entity.Streak;
 import org.example.moomyeongso.domain.user.entity.User;
 import org.example.moomyeongso.domain.user.entity.UserRole;
-import org.example.moomyeongso.domain.user.repository.UserRepository;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -30,7 +31,6 @@ import static org.example.moomyeongso.common.util.TimeUtils.KST;
 public class MigrationService {
 
     private final MongoTemplate mongoTemplate;
-    private final UserRepository userRepository;
     private final ReadHistoryRepository readHistoryRepository;
 
     public Optional<User> consumeAnonymousUserForMigration(String anonymousUserId) {
@@ -49,12 +49,14 @@ public class MigrationService {
         return Optional.ofNullable(consumed);
     }
 
-    public void migrateAnonymousData(User anonymousUser, String toUserId) {
-        if (anonymousUser == null || anonymousUser.getId() == null || toUserId == null) {
+    public void migrateAnonymousData(User anonymousUser, User memberUser) {
+        if (anonymousUser == null || anonymousUser.getId() == null
+                || memberUser == null || memberUser.getId() == null) {
             return;
         }
 
         String fromUserId = anonymousUser.getId();
+        String toUserId = memberUser.getId();
         if (fromUserId.equals(toUserId)) {
             return;
         }
@@ -62,7 +64,7 @@ public class MigrationService {
         migratePosts(fromUserId, toUserId);
         migrateCoin(anonymousUser, toUserId);
         migrateReadHistory(fromUserId, toUserId);
-        migrateStreak(anonymousUser, toUserId);
+        migrateStreak(anonymousUser, memberUser);
     }
 
     public long migratePosts(String fromUserId, String toUserId) {
@@ -88,7 +90,10 @@ public class MigrationService {
 
         Query memberQuery = Query.query(Criteria.where("_id").is(toUserId));
         Update addCoin = new Update().inc("coin", coinToTransfer);
-        mongoTemplate.updateFirst(memberQuery, addCoin, User.class);
+        long matchedCount = mongoTemplate.updateFirst(memberQuery, addCoin, User.class).getMatchedCount();
+        if (matchedCount == 0) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
 
         log.info("Coin migrated: fromUserId={}, toUserId={}, amount={}",
                 fromUserId, toUserId, coinToTransfer);
@@ -131,12 +136,9 @@ public class MigrationService {
                 fromUserId, toUserId, moved, merged);
     }
 
-    private void migrateStreak(User anonymousUser, String toUserId) {
+    private void migrateStreak(User anonymousUser, User memberUser) {
         String fromUserId = anonymousUser.getId();
-        User memberUser = userRepository.findById(toUserId).orElse(null);
-        if (memberUser == null) {
-            return;
-        }
+        String toUserId = memberUser.getId();
 
         Streak anonymous = anonymousUser.getStreak();
         Streak member = memberUser.getStreak();
