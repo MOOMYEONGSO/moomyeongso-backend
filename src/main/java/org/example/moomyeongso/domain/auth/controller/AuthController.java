@@ -43,7 +43,8 @@ public class AuthController {
     @Operation(summary = "로그인", description = "이메일과 비밀번호를 입력받아 로그인합니다. 성공 시 회원 정보와 토큰을 반환합니다.")
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponseDto>> login(@Valid @RequestBody LoginRequestDto request) {
-        LoginResponseDto response = authService.login(request);
+        String anonymousSubject = SecurityUtils.getCurrentSubjectOrEmpty().orElse(null);
+        LoginResponseDto response = authService.login(request, anonymousSubject);
         return ApiResponse.success(HttpStatus.OK, response);
     }
 

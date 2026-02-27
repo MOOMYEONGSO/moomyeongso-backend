@@ -36,6 +36,7 @@ public class AuthService {
     private final EncoderUtils encoderUtils;
     private final VisitHistoryService visitHistoryService;
     private final StreakService streakService;
+    private final MigrationService migrationService;
 
     @Value("${refresh.expiration}")
     private long refreshValidityInMs;
@@ -85,7 +86,7 @@ public class AuthService {
     }
 
     @Transactional("mongoTransactionManager")
-    public LoginResponseDto login(LoginRequestDto request) {
+    public LoginResponseDto login(LoginRequestDto request, String anonymousSubject) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -103,6 +104,10 @@ public class AuthService {
             user = userRepository.findById(user.getId())
                     .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         }
+
+        migrateAnonymousDataIfNeeded(anonymousSubject, user.getId());
+        user = userRepository.findById(user.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         return issueTokens(user);
     }
@@ -142,6 +147,19 @@ public class AuthService {
     @Transactional("mongoTransactionManager")
     public void logout(String userId) {
         refreshTokenRepository.deleteByUserId(userId);
+    }
+
+    private void migrateAnonymousDataIfNeeded(String anonymousUserId, String memberUserId) {
+        if (anonymousUserId == null || anonymousUserId.equals(memberUserId)) {
+            return;
+        }
+
+        userRepository.findByIdAndUserRole(anonymousUserId, UserRole.ANONYMOUS)
+                .ifPresent(ignored -> {
+                    migrationService.migrateAnonymousData(anonymousUserId, memberUserId);
+                    refreshTokenRepository.deleteByUserId(anonymousUserId);
+                    userRepository.deleteById(anonymousUserId);
+                });
     }
 
     private LoginResponseDto issueTokens(User user) {
