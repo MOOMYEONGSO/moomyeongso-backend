@@ -7,6 +7,7 @@ import org.example.moomyeongso.domain.readhistory.entity.ReadHistory;
 import org.example.moomyeongso.domain.readhistory.repository.ReadHistoryRepository;
 import org.example.moomyeongso.domain.user.entity.Streak;
 import org.example.moomyeongso.domain.user.entity.User;
+import org.example.moomyeongso.domain.user.entity.UserRole;
 import org.example.moomyeongso.domain.user.repository.UserRepository;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -32,15 +33,36 @@ public class MigrationService {
     private final UserRepository userRepository;
     private final ReadHistoryRepository readHistoryRepository;
 
-    public void migrateAnonymousData(String fromUserId, String toUserId) {
-        if (fromUserId == null || toUserId == null || fromUserId.equals(toUserId)) {
+    public Optional<User> consumeAnonymousUserForMigration(String anonymousUserId) {
+        if (anonymousUserId == null) {
+            return Optional.empty();
+        }
+
+        Query claimQuery = Query.query(Criteria.where("_id").is(anonymousUserId)
+                .and("userRole").is(UserRole.ANONYMOUS));
+        User consumed = mongoTemplate.findAndRemove(claimQuery, User.class);
+
+        if (consumed != null) {
+            log.info("Anonymous user consumed for migration: userId={}", anonymousUserId);
+        }
+
+        return Optional.ofNullable(consumed);
+    }
+
+    public void migrateAnonymousData(User anonymousUser, String toUserId) {
+        if (anonymousUser == null || anonymousUser.getId() == null || toUserId == null) {
+            return;
+        }
+
+        String fromUserId = anonymousUser.getId();
+        if (fromUserId.equals(toUserId)) {
             return;
         }
 
         migratePosts(fromUserId, toUserId);
-        migrateCoin(fromUserId, toUserId);
+        migrateCoin(anonymousUser, toUserId);
         migrateReadHistory(fromUserId, toUserId);
-        migrateStreak(fromUserId, toUserId);
+        migrateStreak(anonymousUser, toUserId);
     }
 
     public long migratePosts(String fromUserId, String toUserId) {
@@ -57,12 +79,8 @@ public class MigrationService {
         return modified;
     }
 
-    private void migrateCoin(String fromUserId, String toUserId) {
-        User anonymousUser = userRepository.findById(fromUserId).orElse(null);
-        if (anonymousUser == null) {
-            return;
-        }
-
+    private void migrateCoin(User anonymousUser, String toUserId) {
+        String fromUserId = anonymousUser.getId();
         int coinToTransfer = Math.max(anonymousUser.getCoin(), 0);
         if (coinToTransfer <= 0) {
             return;
@@ -113,10 +131,10 @@ public class MigrationService {
                 fromUserId, toUserId, moved, merged);
     }
 
-    private void migrateStreak(String fromUserId, String toUserId) {
-        User anonymousUser = userRepository.findById(fromUserId).orElse(null);
+    private void migrateStreak(User anonymousUser, String toUserId) {
+        String fromUserId = anonymousUser.getId();
         User memberUser = userRepository.findById(toUserId).orElse(null);
-        if (anonymousUser == null || memberUser == null) {
+        if (memberUser == null) {
             return;
         }
 

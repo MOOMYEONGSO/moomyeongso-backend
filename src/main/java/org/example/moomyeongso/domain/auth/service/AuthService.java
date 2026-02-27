@@ -154,11 +154,10 @@ public class AuthService {
             return;
         }
 
-        userRepository.findByIdAndUserRole(anonymousUserId, UserRole.ANONYMOUS)
-                .ifPresent(ignored -> {
-                    migrationService.migrateAnonymousData(anonymousUserId, memberUserId);
-                    refreshTokenRepository.deleteByUserId(anonymousUserId);
-                    userRepository.deleteById(anonymousUserId);
+        migrationService.consumeAnonymousUserForMigration(anonymousUserId)
+                .ifPresent(anonymousUser -> {
+                    migrationService.migrateAnonymousData(anonymousUser, memberUserId);
+                    refreshTokenRepository.deleteByUserId(anonymousUser.getId());
                 });
     }
 
