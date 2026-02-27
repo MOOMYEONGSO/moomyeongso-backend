@@ -26,7 +26,6 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
     private final JwtTokenProvider jwtTokenProvider;
     private final ObjectMapper objectMapper;
     private final JwtSecurityProperties jwtSecurityProperties;
@@ -36,6 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
+        String path = request.getServletPath();
         String token = resolveToken(request);
         log.debug("JwtAuthenticationFilter - Incoming token: {}", token != null ? "present" : "null");
 
@@ -55,6 +55,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (CustomAuthenticationException ex) {
+                if (isOptionalAuthPath(path)) {
+                    log.info("JwtAuthenticationFilter - Invalid token ignored for optional auth path={}",
+                            path);
+                    SecurityContextHolder.clearContext();
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 log.warn("JwtAuthenticationFilter - Token validation failed: {}", ex.getErrorCode().getMessage());
 
                 ResponseEntity<ApiResponse<Object>> entity =
@@ -81,9 +89,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        return jwtSecurityProperties.getIgnorePaths().stream()
-                .anyMatch(path::startsWith);
+        String path = request.getServletPath();
+        return matchesPath(jwtSecurityProperties.getIgnorePaths(), path);
+    }
+
+    private boolean isOptionalAuthPath(String path) {
+        return matchesPath(jwtSecurityProperties.getOptionalAuthPaths(), path);
+    }
+
+    private boolean matchesPath(List<String> configuredPaths, String path) {
+        if (configuredPaths == null || configuredPaths.isEmpty()) {
+            return false;
+        }
+        return configuredPaths.stream().anyMatch(path::startsWith);
     }
 }
-
