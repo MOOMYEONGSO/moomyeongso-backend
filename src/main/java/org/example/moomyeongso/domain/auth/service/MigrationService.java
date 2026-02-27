@@ -7,7 +7,6 @@ import org.example.moomyeongso.common.exception.ErrorCode;
 import org.example.moomyeongso.domain.post.entity.Post;
 import org.example.moomyeongso.domain.readhistory.entity.ReadHistory;
 import org.example.moomyeongso.domain.readhistory.repository.ReadHistoryRepository;
-import org.example.moomyeongso.domain.user.entity.Streak;
 import org.example.moomyeongso.domain.user.entity.User;
 import org.example.moomyeongso.domain.user.entity.UserRole;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -16,14 +15,10 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-
-import static org.example.moomyeongso.common.util.TimeUtils.KST;
 
 @Service
 @Slf4j
@@ -64,12 +59,11 @@ public class MigrationService {
         migratePosts(fromUserId, toUserId);
         migrateCoin(anonymousUser, toUserId);
         migrateReadHistory(fromUserId, toUserId);
-        migrateStreak(anonymousUser, memberUser);
     }
 
-    public long migratePosts(String fromUserId, String toUserId) {
+    public void migratePosts(String fromUserId, String toUserId) {
         if (fromUserId == null || toUserId == null || fromUserId.equals(toUserId)) {
-            return 0;
+            return;
         }
 
         Query query = Query.query(Criteria.where("userId").is(fromUserId));
@@ -78,7 +72,6 @@ public class MigrationService {
         long modified = mongoTemplate.updateMulti(query, update, Post.class).getModifiedCount();
         log.info("Post ownership migrated: fromUserId={}, toUserId={}, modified={}",
                 fromUserId, toUserId, modified);
-        return modified;
     }
 
     private void migrateCoin(User anonymousUser, String toUserId) {
@@ -134,76 +127,6 @@ public class MigrationService {
 
         log.info("Read history migrated: fromUserId={}, toUserId={}, moved={}, merged={}",
                 fromUserId, toUserId, moved, merged);
-    }
-
-    private void migrateStreak(User anonymousUser, User memberUser) {
-        String fromUserId = anonymousUser.getId();
-        String toUserId = memberUser.getId();
-
-        Streak anonymous = anonymousUser.getStreak();
-        Streak member = memberUser.getStreak();
-
-        int anonymousCurrent = anonymous == null ? 0 : anonymous.getCurrent();
-        int memberCurrent = member == null ? 0 : member.getCurrent();
-        int anonymousBest = anonymous == null ? 0 : anonymous.getBest();
-        int memberBest = member == null ? 0 : member.getBest();
-
-        String anonymousDateStr = anonymous == null ? null : anonymous.getLastSeenDate();
-        String memberDateStr = member == null ? null : member.getLastSeenDate();
-        LocalDate anonymousDate = parseDateOrNull(anonymousDateStr);
-        LocalDate memberDate = parseDateOrNull(memberDateStr);
-
-        LocalDate mergedDate = pickLater(memberDate, anonymousDate);
-        String mergedDateStr = mergedDate == null ? null : mergedDate.toString();
-
-        int mergedCurrent;
-        if (memberDate != null && anonymousDate != null && memberDate.equals(anonymousDate)) {
-            mergedCurrent = Math.max(memberCurrent, anonymousCurrent);
-        } else if (mergedDate != null && mergedDate.equals(anonymousDate)) {
-            mergedCurrent = anonymousCurrent;
-        } else {
-            mergedCurrent = memberCurrent;
-        }
-
-        int mergedBest = Math.max(memberBest, anonymousBest);
-        boolean mergedTodayMarked = mergedDate != null && mergedDate.equals(LocalDate.now(KST));
-
-        Update streakUpdate = new Update()
-                .set("streak.current", mergedCurrent)
-                .set("streak.best", mergedBest)
-                .set("streak.lastSeenDate", mergedDateStr)
-                .set("streak.todayMarked", mergedTodayMarked);
-
-        mongoTemplate.updateFirst(
-                Query.query(Criteria.where("_id").is(toUserId)),
-                streakUpdate,
-                User.class
-        );
-
-        log.info("Streak migrated: fromUserId={}, toUserId={}, current={}, best={}, lastSeenDate={}",
-                fromUserId, toUserId, mergedCurrent, mergedBest, mergedDateStr);
-    }
-
-    private LocalDate pickLater(LocalDate first, LocalDate second) {
-        if (first == null) {
-            return second;
-        }
-        if (second == null) {
-            return first;
-        }
-        return first.isAfter(second) ? first : second;
-    }
-
-    private LocalDate parseDateOrNull(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return LocalDate.parse(value);
-        } catch (DateTimeParseException e) {
-            log.warn("Invalid streak date format: {}", value);
-            return null;
-        }
     }
 
     private LocalDateTime latest(LocalDateTime a, LocalDateTime b) {
