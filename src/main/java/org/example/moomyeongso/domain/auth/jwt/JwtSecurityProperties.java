@@ -13,4 +13,5 @@ import java.util.List;
 @ConfigurationProperties(prefix = "security.jwt")
 public class JwtSecurityProperties {
     private List<String> ignorePaths;
+    private List<String> optionalAuthPaths;
 }
