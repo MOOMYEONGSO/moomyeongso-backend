@@ -29,13 +29,13 @@ swagger:
 security:
   jwt:
     ignore-paths:
-      - /auth/login
-      - /auth/signup
       - /auth/anonymous
       - /auth/reissue
       - /notifications/metrics/today
+    optional-auth-paths:
+      - /auth/login
+      - /auth/signup
 
 discord:
   webhook:
     url: ${DISCORD_WEBHOOK_URL}
-

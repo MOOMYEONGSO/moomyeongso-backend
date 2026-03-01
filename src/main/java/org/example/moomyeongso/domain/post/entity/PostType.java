@@ -4,9 +4,9 @@ import org.example.moomyeongso.common.exception.CustomException;
 import org.example.moomyeongso.common.exception.ErrorCode;
 
 public enum PostType {
-    SHORT(30, ErrorCode.CONTENT_TOO_SHORT_FOR_SHORT),
-    LONG(100, ErrorCode.CONTENT_TOO_SHORT_FOR_LONG),
-    TODAY(30, ErrorCode.CONTENT_TOO_SHORT_FOR_SHORT);
+    MOOMYEONGSO(30, ErrorCode.CONTENT_TOO_SHORT),
+    DIARY(30, ErrorCode.CONTENT_TOO_SHORT),
+    TODAY(30, ErrorCode.CONTENT_TOO_SHORT);
 
     private final int minLength;
     private final ErrorCode errorCodeForTooShort;
