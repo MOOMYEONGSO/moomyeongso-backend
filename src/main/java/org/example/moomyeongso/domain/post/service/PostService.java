@@ -4,19 +4,26 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.moomyeongso.common.exception.CustomException;
 import org.example.moomyeongso.common.exception.ErrorCode;
+import org.example.moomyeongso.domain.post.dto.request.PostCommentCreateRequestDto;
 import org.example.moomyeongso.domain.post.dto.request.PostCreateRequestDto;
+import org.example.moomyeongso.domain.post.dto.response.PostCommentCreateResponseDto;
+import org.example.moomyeongso.domain.post.dto.response.PostCommentResponseDto;
 import org.example.moomyeongso.domain.post.dto.response.PostCreateResponseDto;
 import org.example.moomyeongso.domain.post.dto.response.PostDetailResponseDto;
 import org.example.moomyeongso.domain.post.dto.response.PostPreviewListResponse;
 import org.example.moomyeongso.domain.post.dto.response.PostPreviewResponseDto;
 import org.example.moomyeongso.domain.post.entity.FirstWriteGate;
 import org.example.moomyeongso.domain.post.entity.Post;
+import org.example.moomyeongso.domain.post.entity.PostComment;
 import org.example.moomyeongso.domain.post.entity.PostStatus;
 import org.example.moomyeongso.domain.post.entity.PostTag;
 import org.example.moomyeongso.domain.post.entity.PostType;
+import org.example.moomyeongso.domain.post.repository.PostCommentRepository;
 import org.example.moomyeongso.domain.post.repository.PostRepository;
 import org.example.moomyeongso.domain.post.repository.RandomPostFinder;
 import org.example.moomyeongso.domain.readhistory.service.ReadHistoryService;
+import org.example.moomyeongso.domain.user.entity.User;
+import org.example.moomyeongso.domain.user.repository.UserRepository;
 import org.example.moomyeongso.domain.user.service.CoinService;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -43,6 +50,8 @@ public class PostService {
     private final CalendarService calendarService;
     private final MongoTemplate mongoTemplate;
     private final RandomPostFinder randomPostFinder;
+    private final PostCommentRepository postCommentRepository;
+    private final UserRepository userRepository;
 
     public PostPreviewListResponse getPostPreviews(String userId) {
         int coin = coinService.getCoin(userId);
@@ -74,7 +83,6 @@ public class PostService {
                 .type(request.type())
                 .tags(request.tags())
                 .userId(userId)
-                .status(PostStatus.ACTIVE)
                 .build());
 
         boolean isFirstToday;
@@ -131,8 +139,7 @@ public class PostService {
     @Transactional("mongoTransactionManager")
     public PostDetailResponseDto getPostById(String postId, String userId) {
 
-        Post post = postRepository.findByIdAndStatus(postId, PostStatus.ACTIVE)
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        Post post = getActivePost(postId);
 
         boolean isOwner = userId.equals(post.getUserId());
 
@@ -151,9 +158,42 @@ public class PostService {
         }
 
         int finalCoin = coinService.getCoin(userId);
+        List<PostCommentResponseDto> comments = getPostComments(postId, userId);
 
-        return PostDetailResponseDto.from(post, finalCoin);
+        return PostDetailResponseDto.from(post, finalCoin, comments);
 
+    }
+
+    @Transactional("mongoTransactionManager")
+    public PostCommentCreateResponseDto createComment(String postId, PostCommentCreateRequestDto request, String userId) {
+        Post post = getActivePost(postId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        String nickname = resolveNickname(user);
+
+        PostComment comment = postCommentRepository.save(PostComment.builder()
+                .postId(post.getId())
+                .authorId(userId)
+                .authorNickname(nickname)
+                .content(request.content())
+                .build());
+
+        return PostCommentCreateResponseDto.from(comment);
+    }
+
+    @Transactional("mongoTransactionManager")
+    public void deleteComment(String postId, String commentId, String userId) {
+        getActivePost(postId);
+
+        PostComment comment = postCommentRepository.findByIdAndPostId(commentId, postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+
+        if (!comment.getAuthorId().equals(userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
+        postCommentRepository.delete(comment);
     }
 
     public List<PostPreviewResponseDto> getMyPosts(String userId) {
@@ -205,6 +245,24 @@ public class PostService {
                 new Update().inc("views", 1),
                 Post.class
         );
+    }
+
+    private Post getActivePost(String postId) {
+        return postRepository.findByIdAndStatus(postId, PostStatus.ACTIVE)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+    }
+
+    private List<PostCommentResponseDto> getPostComments(String postId, String userId) {
+        return postCommentRepository.findAllByPostIdOrderByCreatedAtAsc(postId).stream()
+                .map(comment -> PostCommentResponseDto.from(comment, userId))
+                .toList();
+    }
+
+    private String resolveNickname(User user) {
+        if (user.getNickname() == null || user.getNickname().isBlank()) {
+            return user.getId();
+        }
+        return user.getNickname();
     }
 
 }

@@ -3,6 +3,7 @@ package org.example.moomyeongso.domain.post.dto.response;
 import org.example.moomyeongso.domain.post.entity.Post;
 
 import java.time.Instant;
+import java.util.List;
 
 public record PostDetailResponseDto(
         String postId,
@@ -11,9 +12,10 @@ public record PostDetailResponseDto(
         long likes,
         long views,
         Instant createdAt,
-        int coin
+        int coin,
+        List<PostCommentResponseDto> comments
 ) {
-    public static PostDetailResponseDto from(Post post, int coin) {
+    public static PostDetailResponseDto from(Post post, int coin, List<PostCommentResponseDto> comments) {
         return new PostDetailResponseDto(
                 post.getId(),
                 post.getTitle(),
@@ -21,7 +23,8 @@ public record PostDetailResponseDto(
                 post.getLikes(),
                 post.getViews(),
                 post.getCreatedAt(),
-                coin
+                coin,
+                comments
         );
     }
 }

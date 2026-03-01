@@ -6,7 +6,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.moomyeongso.common.response.ApiResponse;
 import org.example.moomyeongso.domain.auth.core.SecurityUtils;
+import org.example.moomyeongso.domain.post.dto.request.PostCommentCreateRequestDto;
 import org.example.moomyeongso.domain.post.dto.request.PostCreateRequestDto;
+import org.example.moomyeongso.domain.post.dto.response.PostCommentCreateResponseDto;
 import org.example.moomyeongso.domain.post.dto.response.PostCreateResponseDto;
 import org.example.moomyeongso.domain.post.dto.response.PostDetailResponseDto;
 import org.example.moomyeongso.domain.post.dto.response.PostPreviewListResponse;
@@ -82,6 +84,28 @@ public class PostController {
 
         PostDetailResponseDto response = postService.getPostById(id, subject);
         return ApiResponse.success(HttpStatus.OK, response);
+    }
+
+    @Operation(summary = "댓글 작성", description = "특정 게시글에 댓글을 작성합니다.")
+    @PostMapping("/posts/{id}/comments")
+    public ResponseEntity<ApiResponse<PostCommentCreateResponseDto>> createComment(
+            @PathVariable String id,
+            @RequestBody @Valid PostCommentCreateRequestDto request
+    ) {
+        String subject = SecurityUtils.getCurrentSubject();
+        PostCommentCreateResponseDto response = postService.createComment(id, request, subject);
+        return ApiResponse.success(HttpStatus.CREATED, response);
+    }
+
+    @Operation(summary = "댓글 삭제", description = "댓글 작성자 본인만 댓글을 삭제할 수 있습니다.")
+    @DeleteMapping("/posts/{postId}/comments/{commentId}")
+    public ResponseEntity<ApiResponse<Void>> deleteComment(
+            @PathVariable String postId,
+            @PathVariable String commentId
+    ) {
+        String subject = SecurityUtils.getCurrentSubject();
+        postService.deleteComment(postId, commentId, subject);
+        return ApiResponse.success(HttpStatus.OK);
     }
 
     @Operation(summary = "내가 쓴 글 조회", description = "내가 작성한 게시글 목록을 반환합니다.")
