@@ -153,9 +153,11 @@ public class PostService {
             }
         }
 
-        if (firstRead) {
-            incrementViews(postId);
-        }
+//        if (firstRead) {
+//            incrementViews(postId);
+//        }
+        // 조회수 무조건 증가로 변경
+        incrementViews(postId);
 
         int finalCoin = coinService.getCoin(userId);
         List<PostCommentResponseDto> comments = getPostComments(postId, userId);
