@@ -12,6 +12,7 @@ import org.example.moomyeongso.domain.auth.dto.response.LoginResponseDto;
 import org.example.moomyeongso.domain.auth.entity.RefreshToken;
 import org.example.moomyeongso.domain.auth.jwt.JwtTokenProvider;
 import org.example.moomyeongso.domain.auth.repository.RefreshTokenRepository;
+import org.example.moomyeongso.domain.user.entity.Streak;
 import org.example.moomyeongso.domain.user.entity.User;
 import org.example.moomyeongso.domain.user.entity.UserRole;
 import org.example.moomyeongso.domain.user.entity.UserStatus;
@@ -23,8 +24,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import static org.example.moomyeongso.common.util.TimeUtils.KST;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +40,7 @@ public class AuthService {
     private final EncoderUtils encoderUtils;
     private final VisitHistoryService visitHistoryService;
     private final StreakService streakService;
+    private final MigrationService migrationService;
 
     @Value("${refresh.expiration}")
     private long refreshValidityInMs;
@@ -85,7 +90,7 @@ public class AuthService {
     }
 
     @Transactional("mongoTransactionManager")
-    public LoginResponseDto login(LoginRequestDto request) {
+    public LoginResponseDto login(LoginRequestDto request, String anonymousSubject) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -103,6 +108,10 @@ public class AuthService {
             user = userRepository.findById(user.getId())
                     .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         }
+
+        migrateAnonymousDataIfNeeded(anonymousSubject, user);
+        user = userRepository.findById(user.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         return issueTokens(user);
     }
@@ -142,6 +151,34 @@ public class AuthService {
     @Transactional("mongoTransactionManager")
     public void logout(String userId) {
         refreshTokenRepository.deleteByUserId(userId);
+    }
+
+    private void migrateAnonymousDataIfNeeded(String anonymousUserId, User memberUser) {
+        if (anonymousUserId == null || memberUser == null || anonymousUserId.equals(memberUser.getId())) {
+            return;
+        }
+
+        migrationService.consumeAnonymousUserForMigration(anonymousUserId)
+                .ifPresent(anonymousUser -> {
+                    migrationService.migrateAnonymousData(anonymousUser, memberUser);
+                    if (wasVisitedToday(anonymousUser)) {
+                        streakService.updateOnVisit(memberUser);
+                    }
+                    refreshTokenRepository.deleteByUserId(anonymousUser.getId());
+                });
+    }
+
+    private boolean wasVisitedToday(User anonymousUser) {
+        if (anonymousUser == null) {
+            return false;
+        }
+
+        Streak streak = anonymousUser.getStreak();
+        if (streak == null || streak.getLastSeenDate() == null) {
+            return false;
+        }
+
+        return LocalDate.now(KST).toString().equals(streak.getLastSeenDate());
     }
 
     private LoginResponseDto issueTokens(User user) {

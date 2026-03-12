@@ -16,6 +16,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 @Configuration
 @RequiredArgsConstructor
 @EnableMethodSecurity
@@ -32,16 +36,21 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        List<String> permitAllPaths = new ArrayList<>(safePaths(jwtSecurityProperties.getIgnorePaths()));
+        permitAllPaths.addAll(safePaths(jwtSecurityProperties.getOptionalAuthPaths()));
+
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(jwtSecurityProperties.getIgnorePaths().toArray(new String[0])).permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**")
-                        .hasRole("ADMIN")
-                        .anyRequest().authenticated()
-                )
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
+                    if (!permitAllPaths.isEmpty()) {
+                        auth.requestMatchers(permitAllPaths.toArray(new String[0])).permitAll();
+                    }
+                    auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**")
+                            .hasRole("ADMIN");
+                    auth.anyRequest().authenticated();
+                })
                 .exceptionHandling(customizer ->
                         customizer.authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
@@ -49,5 +58,9 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    private List<String> safePaths(List<String> paths) {
+        return paths == null ? Collections.emptyList() : paths;
     }
 }
