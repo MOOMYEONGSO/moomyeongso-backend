@@ -5,6 +5,7 @@ import org.example.moomyeongso.domain.post.dto.response.PostPreviewListResponse;
 import org.example.moomyeongso.domain.post.dto.response.PostPreviewResponseDto;
 import org.example.moomyeongso.domain.post.entity.Post;
 import org.example.moomyeongso.domain.post.entity.PostStatus;
+import org.example.moomyeongso.domain.post.entity.PostType;
 import org.example.moomyeongso.domain.post.repository.PostRepository;
 import org.example.moomyeongso.domain.readhistory.entity.ReadHistory;
 import org.example.moomyeongso.domain.readhistory.repository.ReadHistoryRepository;
@@ -37,6 +38,14 @@ public class ReadHistoryService {
      */
     @Transactional(readOnly = true)
     public PostPreviewListResponse getMyReadPosts(String userId) {
+        return getMyReadPosts(userId, null);
+    }
+
+    /**
+     * 내가 열람한 일기 목록 조회(타입 필터)
+     */
+    @Transactional(readOnly = true)
+    public PostPreviewListResponse getMyReadPosts(String userId, PostType type) {
         int coin = coinService.getCoin(userId);
 
         List<ReadHistory> histories = readHistoryRepository.findAllByUserIdOrderByReadAtDesc(userId);
@@ -53,6 +62,7 @@ public class ReadHistoryService {
                 .map(history -> postMap.get(history.getPostId()))
                 .filter(Objects::nonNull)
                 .filter(post -> post.getStatus() == PostStatus.ACTIVE)
+                .filter(post -> type == null || post.getType() == type)
                 .map(PostPreviewResponseDto::from)
                 .toList();
 
