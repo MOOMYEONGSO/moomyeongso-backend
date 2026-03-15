@@ -15,6 +15,7 @@ import org.example.moomyeongso.domain.post.dto.response.PostPreviewResponseDto;
 import org.example.moomyeongso.domain.post.entity.FirstWriteGate;
 import org.example.moomyeongso.domain.post.entity.Post;
 import org.example.moomyeongso.domain.post.entity.PostComment;
+import org.example.moomyeongso.domain.post.entity.PostCommentStatus;
 import org.example.moomyeongso.domain.post.entity.PostStatus;
 import org.example.moomyeongso.domain.post.entity.PostTag;
 import org.example.moomyeongso.domain.post.entity.PostType;
@@ -188,18 +189,23 @@ public class PostService {
     public void deleteComment(String postId, String commentId, String userId) {
         getActivePost(postId);
 
-        PostComment comment = postCommentRepository.findByIdAndPostId(commentId, postId)
+        PostComment comment = postCommentRepository.findByIdAndPostIdAndStatus(commentId, postId, PostCommentStatus.ACTIVE)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
         if (!comment.getAuthorId().equals(userId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
 
-        postCommentRepository.delete(comment);
+        comment.markDeleted();
+        postCommentRepository.save(comment);
     }
 
-    public List<PostPreviewResponseDto> getMyPosts(String userId) {
-        return postRepository.findAllByUserIdAndStatusOrderByCreatedAtDesc(userId, PostStatus.ACTIVE).stream()
+    public List<PostPreviewResponseDto> getMyPosts(String userId, PostType type) {
+        List<Post> posts = (type == null)
+                ? postRepository.findAllByUserIdAndStatusOrderByCreatedAtDesc(userId, PostStatus.ACTIVE)
+                : postRepository.findAllByUserIdAndTypeAndStatusOrderByCreatedAtDesc(userId, type, PostStatus.ACTIVE);
+
+        return posts.stream()
                 .map(PostPreviewResponseDto::from)
                 .toList();
     }
@@ -255,7 +261,7 @@ public class PostService {
     }
 
     private List<PostCommentResponseDto> getPostComments(String postId, String userId) {
-        return postCommentRepository.findAllByPostIdOrderByCreatedAtAsc(postId).stream()
+        return postCommentRepository.findAllByPostIdAndStatusOrderByCreatedAtAsc(postId, PostCommentStatus.ACTIVE).stream()
                 .map(comment -> PostCommentResponseDto.from(comment, userId))
                 .toList();
     }
