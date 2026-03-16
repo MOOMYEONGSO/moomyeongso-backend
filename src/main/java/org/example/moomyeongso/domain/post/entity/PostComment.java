@@ -16,7 +16,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
 
 @Document(collection = "post_comments")
-@CompoundIndex(name = "post_created_idx", def = "{'postId': 1, 'createdAt': 1}")
+@CompoundIndex(name = "post_status_created_idx", def = "{'postId': 1, 'status': 1, 'createdAt': 1}")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -38,6 +38,14 @@ public class PostComment {
 
     private String content;
 
+    @Builder.Default
+    @Indexed
+    private PostCommentStatus status = PostCommentStatus.ACTIVE;
+
     @CreatedDate
     private Instant createdAt;
+
+    public void markDeleted() {
+        this.status = PostCommentStatus.DELETED;
+    }
 }
