@@ -157,13 +157,13 @@ public class PostService {
 //        if (firstRead) {
 //            incrementViews(postId);
 //        }
-        // 조회수 무조건 증가로 변경
-        incrementViews(postId);
+        // 조회수 무조건 증가로 변경 + 증가된 값을 같은 응답에 반영
+        Post updatedPost = incrementViewsAndGetPost(postId);
 
         int finalCoin = coinService.getCoin(userId);
         List<PostCommentResponseDto> comments = getPostComments(postId, userId);
 
-        return PostDetailResponseDto.from(post, finalCoin, comments);
+        return PostDetailResponseDto.from(updatedPost, finalCoin, comments);
 
     }
 
@@ -249,12 +249,22 @@ public class PostService {
         return index < sorted.size() ? sorted.get(index) : null;
     }
 
-    private void incrementViews(String postId) {
-        mongoTemplate.updateFirst(
-                Query.query(Criteria.where("_id").is(postId)),
+    private Post incrementViewsAndGetPost(String postId) {
+        Query query = Query.query(
+                Criteria.where("_id").is(postId)
+                        .and("status").is(PostStatus.ACTIVE)
+        );
+        Post updatedPost = mongoTemplate.findAndModify(
+                query,
                 new Update().inc("views", 1),
+                FindAndModifyOptions.options().returnNew(true),
                 Post.class
         );
+
+        if (updatedPost == null) {
+            throw new CustomException(ErrorCode.POST_NOT_FOUND);
+        }
+        return updatedPost;
     }
 
     private void syncCommentCount(String postId) {
