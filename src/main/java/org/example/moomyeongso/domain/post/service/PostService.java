@@ -15,6 +15,7 @@ import org.example.moomyeongso.domain.post.dto.response.PostPreviewResponseDto;
 import org.example.moomyeongso.domain.post.entity.FirstWriteGate;
 import org.example.moomyeongso.domain.post.entity.Post;
 import org.example.moomyeongso.domain.post.entity.PostComment;
+import org.example.moomyeongso.domain.post.entity.PostCommentStatus;
 import org.example.moomyeongso.domain.post.entity.PostStatus;
 import org.example.moomyeongso.domain.post.entity.PostTag;
 import org.example.moomyeongso.domain.post.entity.PostType;
@@ -37,6 +38,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -52,22 +54,29 @@ public class PostService {
     private final RandomPostFinder randomPostFinder;
     private final PostCommentRepository postCommentRepository;
     private final UserRepository userRepository;
+    private final PostCommentService postCommentService;
 
     public PostPreviewListResponse getPostPreviews(String userId) {
         int coin = coinService.getCoin(userId);
-        List<PostPreviewResponseDto> posts =
-                postRepository.findAllByStatusAndUserIdNotOrderByCreatedAtDesc(PostStatus.ACTIVE, userId).stream()
-                        .map(PostPreviewResponseDto::from)
-                        .toList();
+        List<Post> postEntities = postRepository.findAllByStatusAndUserIdNotOrderByCreatedAtDesc(PostStatus.ACTIVE, userId);
+        Map<String, Long> commentCounts = postCommentService.getActiveCommentCounts(
+                postEntities.stream().map(Post::getId).toList()
+        );
+        List<PostPreviewResponseDto> posts = postEntities.stream()
+                .map(post -> PostPreviewResponseDto.from(post, commentCounts.getOrDefault(post.getId(), 0L)))
+                .toList();
         return PostPreviewListResponse.of(posts, coin);
     }
 
     public PostPreviewListResponse getPostPreviews(PostType type, String userId) {
         int coin = coinService.getCoin(userId);
-        List<PostPreviewResponseDto> posts =
-                postRepository.findAllByTypeAndStatusAndUserIdNotOrderByCreatedAtDesc(type, PostStatus.ACTIVE, userId).stream()
-                        .map(PostPreviewResponseDto::from)
-                        .toList();
+        List<Post> postEntities = postRepository.findAllByTypeAndStatusAndUserIdNotOrderByCreatedAtDesc(type, PostStatus.ACTIVE, userId);
+        Map<String, Long> commentCounts = postCommentService.getActiveCommentCounts(
+                postEntities.stream().map(Post::getId).toList()
+        );
+        List<PostPreviewResponseDto> posts = postEntities.stream()
+                .map(post -> PostPreviewResponseDto.from(post, commentCounts.getOrDefault(post.getId(), 0L)))
+                .toList();
         return PostPreviewListResponse.of(posts, coin);
     }
 
@@ -156,13 +165,13 @@ public class PostService {
 //        if (firstRead) {
 //            incrementViews(postId);
 //        }
-        // 조회수 무조건 증가로 변경
-        incrementViews(postId);
+        // 조회수 무조건 증가로 변경 + 증가된 값을 같은 응답에 반영
+        Post updatedPost = incrementViewsAndGetPost(postId);
 
         int finalCoin = coinService.getCoin(userId);
         List<PostCommentResponseDto> comments = getPostComments(postId, userId);
 
-        return PostDetailResponseDto.from(post, finalCoin, comments);
+        return PostDetailResponseDto.from(updatedPost, finalCoin, comments);
 
     }
 
@@ -181,6 +190,7 @@ public class PostService {
                 .content(request.content())
                 .build());
 
+        syncCommentCount(post.getId());
         return PostCommentCreateResponseDto.from(comment);
     }
 
@@ -188,19 +198,28 @@ public class PostService {
     public void deleteComment(String postId, String commentId, String userId) {
         getActivePost(postId);
 
-        PostComment comment = postCommentRepository.findByIdAndPostId(commentId, postId)
+        PostComment comment = postCommentRepository.findByIdAndPostIdAndStatus(commentId, postId, PostCommentStatus.ACTIVE)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
         if (!comment.getAuthorId().equals(userId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
 
-        postCommentRepository.delete(comment);
+        comment.markDeleted();
+        postCommentRepository.save(comment);
+        syncCommentCount(postId);
     }
 
-    public List<PostPreviewResponseDto> getMyPosts(String userId) {
-        return postRepository.findAllByUserIdAndStatusOrderByCreatedAtDesc(userId, PostStatus.ACTIVE).stream()
-                .map(PostPreviewResponseDto::from)
+    public List<PostPreviewResponseDto> getMyPosts(String userId, PostType type) {
+        List<Post> posts = (type == null)
+                ? postRepository.findAllByUserIdAndStatusOrderByCreatedAtDesc(userId, PostStatus.ACTIVE)
+                : postRepository.findAllByUserIdAndTypeAndStatusOrderByCreatedAtDesc(userId, type, PostStatus.ACTIVE);
+
+        Map<String, Long> commentCounts = postCommentService.getActiveCommentCounts(
+                posts.stream().map(Post::getId).toList()
+        );
+        return posts.stream()
+                .map(post -> PostPreviewResponseDto.from(post, commentCounts.getOrDefault(post.getId(), 0L)))
                 .toList();
     }
 
@@ -227,8 +246,11 @@ public class PostService {
         } else {
             posts = randomPostFinder.findRandomByStatusAndTagExcludingUser(PostStatus.ACTIVE, tag, count, userId);
         }
+        Map<String, Long> commentCounts = postCommentService.getActiveCommentCounts(
+                posts.stream().map(Post::getId).toList()
+        );
         return posts.stream()
-                .map(PostPreviewResponseDto::from)
+                .map(post -> PostPreviewResponseDto.from(post, commentCounts.getOrDefault(post.getId(), 0L)))
                 .toList();
     }
 
@@ -241,10 +263,29 @@ public class PostService {
         return index < sorted.size() ? sorted.get(index) : null;
     }
 
-    private void incrementViews(String postId) {
+    private Post incrementViewsAndGetPost(String postId) {
+        Query query = Query.query(
+                Criteria.where("_id").is(postId)
+                        .and("status").is(PostStatus.ACTIVE)
+        );
+        Post updatedPost = mongoTemplate.findAndModify(
+                query,
+                new Update().inc("views", 1),
+                FindAndModifyOptions.options().returnNew(true),
+                Post.class
+        );
+
+        if (updatedPost == null) {
+            throw new CustomException(ErrorCode.POST_NOT_FOUND);
+        }
+        return updatedPost;
+    }
+
+    private void syncCommentCount(String postId) {
+        long activeCommentCount = postCommentRepository.countByPostIdAndStatus(postId, PostCommentStatus.ACTIVE);
         mongoTemplate.updateFirst(
                 Query.query(Criteria.where("_id").is(postId)),
-                new Update().inc("views", 1),
+                new Update().set("commentCount", activeCommentCount),
                 Post.class
         );
     }
@@ -255,7 +296,7 @@ public class PostService {
     }
 
     private List<PostCommentResponseDto> getPostComments(String postId, String userId) {
-        return postCommentRepository.findAllByPostIdOrderByCreatedAtAsc(postId).stream()
+        return postCommentRepository.findAllByPostIdAndStatusOrderByCreatedAtAsc(postId, PostCommentStatus.ACTIVE).stream()
                 .map(comment -> PostCommentResponseDto.from(comment, userId))
                 .toList();
     }
