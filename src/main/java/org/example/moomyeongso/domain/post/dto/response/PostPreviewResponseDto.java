@@ -23,6 +23,10 @@ public record PostPreviewResponseDto(
     private static final String ELLIPSIS = "...";
 
     public static PostPreviewResponseDto from(Post post) {
+        return from(post, post.getCommentCount());
+    }
+
+    public static PostPreviewResponseDto from(Post post, long commentCount) {
         String content = post.getContent() == null ? "" : post.getContent();
 
         String preview = content.length() > PREVIEW_MAX_LENGTH
@@ -37,7 +41,7 @@ public record PostPreviewResponseDto(
                 content.length(),
                 post.getTags(),
                 post.getLikes(),
-                post.getCommentCount(),
+                commentCount,
                 post.getViews(),
                 post.getCreatedAt()
         );

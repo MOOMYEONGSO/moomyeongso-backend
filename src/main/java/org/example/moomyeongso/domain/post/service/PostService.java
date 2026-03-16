@@ -38,6 +38,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -53,22 +54,29 @@ public class PostService {
     private final RandomPostFinder randomPostFinder;
     private final PostCommentRepository postCommentRepository;
     private final UserRepository userRepository;
+    private final PostCommentService postCommentService;
 
     public PostPreviewListResponse getPostPreviews(String userId) {
         int coin = coinService.getCoin(userId);
-        List<PostPreviewResponseDto> posts =
-                postRepository.findAllByStatusAndUserIdNotOrderByCreatedAtDesc(PostStatus.ACTIVE, userId).stream()
-                        .map(PostPreviewResponseDto::from)
-                        .toList();
+        List<Post> postEntities = postRepository.findAllByStatusAndUserIdNotOrderByCreatedAtDesc(PostStatus.ACTIVE, userId);
+        Map<String, Long> commentCounts = postCommentService.getActiveCommentCounts(
+                postEntities.stream().map(Post::getId).toList()
+        );
+        List<PostPreviewResponseDto> posts = postEntities.stream()
+                .map(post -> PostPreviewResponseDto.from(post, commentCounts.getOrDefault(post.getId(), 0L)))
+                .toList();
         return PostPreviewListResponse.of(posts, coin);
     }
 
     public PostPreviewListResponse getPostPreviews(PostType type, String userId) {
         int coin = coinService.getCoin(userId);
-        List<PostPreviewResponseDto> posts =
-                postRepository.findAllByTypeAndStatusAndUserIdNotOrderByCreatedAtDesc(type, PostStatus.ACTIVE, userId).stream()
-                        .map(PostPreviewResponseDto::from)
-                        .toList();
+        List<Post> postEntities = postRepository.findAllByTypeAndStatusAndUserIdNotOrderByCreatedAtDesc(type, PostStatus.ACTIVE, userId);
+        Map<String, Long> commentCounts = postCommentService.getActiveCommentCounts(
+                postEntities.stream().map(Post::getId).toList()
+        );
+        List<PostPreviewResponseDto> posts = postEntities.stream()
+                .map(post -> PostPreviewResponseDto.from(post, commentCounts.getOrDefault(post.getId(), 0L)))
+                .toList();
         return PostPreviewListResponse.of(posts, coin);
     }
 
@@ -207,8 +215,11 @@ public class PostService {
                 ? postRepository.findAllByUserIdAndStatusOrderByCreatedAtDesc(userId, PostStatus.ACTIVE)
                 : postRepository.findAllByUserIdAndTypeAndStatusOrderByCreatedAtDesc(userId, type, PostStatus.ACTIVE);
 
+        Map<String, Long> commentCounts = postCommentService.getActiveCommentCounts(
+                posts.stream().map(Post::getId).toList()
+        );
         return posts.stream()
-                .map(PostPreviewResponseDto::from)
+                .map(post -> PostPreviewResponseDto.from(post, commentCounts.getOrDefault(post.getId(), 0L)))
                 .toList();
     }
 
@@ -235,8 +246,11 @@ public class PostService {
         } else {
             posts = randomPostFinder.findRandomByStatusAndTagExcludingUser(PostStatus.ACTIVE, tag, count, userId);
         }
+        Map<String, Long> commentCounts = postCommentService.getActiveCommentCounts(
+                posts.stream().map(Post::getId).toList()
+        );
         return posts.stream()
-                .map(PostPreviewResponseDto::from)
+                .map(post -> PostPreviewResponseDto.from(post, commentCounts.getOrDefault(post.getId(), 0L)))
                 .toList();
     }
 

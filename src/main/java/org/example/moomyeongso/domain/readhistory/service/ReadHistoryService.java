@@ -7,6 +7,7 @@ import org.example.moomyeongso.domain.post.entity.Post;
 import org.example.moomyeongso.domain.post.entity.PostStatus;
 import org.example.moomyeongso.domain.post.entity.PostType;
 import org.example.moomyeongso.domain.post.repository.PostRepository;
+import org.example.moomyeongso.domain.post.service.PostCommentService;
 import org.example.moomyeongso.domain.readhistory.entity.ReadHistory;
 import org.example.moomyeongso.domain.readhistory.repository.ReadHistoryRepository;
 import org.example.moomyeongso.domain.user.service.CoinService;
@@ -32,6 +33,7 @@ public class ReadHistoryService {
     private final PostRepository postRepository;
     private final CoinService coinService;
     private final MongoTemplate mongoTemplate;
+    private final PostCommentService postCommentService;
 
     /**
      * 내가 열람한 일기 목록 조회
@@ -58,12 +60,19 @@ public class ReadHistoryService {
                 .stream()
                 .collect(Collectors.toMap(Post::getId, Function.identity()));
 
-        List<PostPreviewResponseDto> posts = histories.stream()
+        List<Post> filteredPosts = histories.stream()
                 .map(history -> postMap.get(history.getPostId()))
                 .filter(Objects::nonNull)
                 .filter(post -> post.getStatus() == PostStatus.ACTIVE)
                 .filter(post -> type == null || post.getType() == type)
-                .map(PostPreviewResponseDto::from)
+                .toList();
+
+        Map<String, Long> commentCounts = postCommentService.getActiveCommentCounts(
+                filteredPosts.stream().map(Post::getId).toList()
+        );
+
+        List<PostPreviewResponseDto> posts = filteredPosts.stream()
+                .map(post -> PostPreviewResponseDto.from(post, commentCounts.getOrDefault(post.getId(), 0L)))
                 .toList();
 
         return PostPreviewListResponse.of(posts, coin);
