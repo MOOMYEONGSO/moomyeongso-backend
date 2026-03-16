@@ -182,6 +182,7 @@ public class PostService {
                 .content(request.content())
                 .build());
 
+        incrementCommentCount(post.getId());
         return PostCommentCreateResponseDto.from(comment);
     }
 
@@ -198,6 +199,7 @@ public class PostService {
 
         comment.markDeleted();
         postCommentRepository.save(comment);
+        decrementCommentCount(postId);
     }
 
     public List<PostPreviewResponseDto> getMyPosts(String userId, PostType type) {
@@ -251,6 +253,22 @@ public class PostService {
         mongoTemplate.updateFirst(
                 Query.query(Criteria.where("_id").is(postId)),
                 new Update().inc("views", 1),
+                Post.class
+        );
+    }
+
+    private void incrementCommentCount(String postId) {
+        mongoTemplate.updateFirst(
+                Query.query(Criteria.where("_id").is(postId)),
+                new Update().inc("commentCount", 1),
+                Post.class
+        );
+    }
+
+    private void decrementCommentCount(String postId) {
+        mongoTemplate.updateFirst(
+                Query.query(Criteria.where("_id").is(postId)),
+                new Update().inc("commentCount", -1),
                 Post.class
         );
     }

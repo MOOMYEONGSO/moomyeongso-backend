@@ -12,7 +12,10 @@ public record PostPreviewResponseDto(
         String contentPreview,
         int contentLength,
         List<String> tags,
+        // TODO: likeCount로 재정의 필요
         long likes,
+        long commentCount,
+        // TODO: viewCount로 재정의 필요
         long views,
         Instant createdAt
 ) {
@@ -34,6 +37,7 @@ public record PostPreviewResponseDto(
                 content.length(),
                 post.getTags(),
                 post.getLikes(),
+                post.getCommentCount(),
                 post.getViews(),
                 post.getCreatedAt()
         );
