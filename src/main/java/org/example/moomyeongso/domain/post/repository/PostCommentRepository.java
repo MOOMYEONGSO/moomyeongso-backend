@@ -11,4 +11,5 @@ public interface PostCommentRepository extends MongoRepository<PostComment, Stri
     List<PostComment> findAllByPostIdAndStatusOrderByCreatedAtAsc(String postId, PostCommentStatus status);
     Optional<PostComment> findByIdAndPostIdAndStatus(String id, String postId, PostCommentStatus status);
     long countByPostIdAndStatus(String postId, PostCommentStatus status);
+    boolean existsByPostIdAndAuthorIdAndStatus(String postId, String authorId, PostCommentStatus status);
 }
