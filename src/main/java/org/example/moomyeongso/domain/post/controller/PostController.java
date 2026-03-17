@@ -15,6 +15,7 @@ import org.example.moomyeongso.domain.post.dto.response.PostPreviewListResponse;
 import org.example.moomyeongso.domain.post.dto.response.PostPreviewResponseDto;
 import org.example.moomyeongso.domain.post.entity.PostType;
 import org.example.moomyeongso.domain.post.service.PostService;
+import org.example.moomyeongso.domain.readhistory.service.ReadHistoryService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,7 @@ import java.util.List;
 public class PostController {
 
     private final PostService postService;
+    private final ReadHistoryService readHistoryService;
 
     @Operation(
             summary = "글 조회",
@@ -108,14 +110,24 @@ public class PostController {
         return ApiResponse.success(HttpStatus.OK);
     }
 
-    @Operation(summary = "내가 쓴 글 조회", description = "내가 작성한 게시글 목록을 반환합니다.")
+    @Operation(summary = "내가 쓴 글 조회", description = "내가 작성한 게시글 목록을 반환합니다. type 파라미터로 타입 필터링이 가능합니다.")
     @GetMapping("/posts/me")
-    public ResponseEntity<ApiResponse<List<PostPreviewResponseDto>>> getMyPosts() {
+    public ResponseEntity<ApiResponse<List<PostPreviewResponseDto>>> getMyPosts(
+            @RequestParam(required = false) PostType type) {
 
         String subject = SecurityUtils.getCurrentSubject();
 
-        List<PostPreviewResponseDto> response = postService.getMyPosts(subject);
+        List<PostPreviewResponseDto> response = postService.getMyPosts(subject, type);
         return ApiResponse.success(HttpStatus.OK,response);
+    }
+
+    @Operation(summary = "내가 열람한 글 조회", description = "내가 열람한 게시글 목록을 최신순으로 반환합니다. type 파라미터로 타입 필터링이 가능합니다.")
+    @GetMapping("/posts/me/read")
+    public ResponseEntity<ApiResponse<PostPreviewListResponse>> getMyReadPosts(
+            @RequestParam(required = false) PostType type) {
+        String subject = SecurityUtils.getCurrentSubject();
+        PostPreviewListResponse response = readHistoryService.getMyReadPosts(subject, type);
+        return ApiResponse.success(HttpStatus.OK, response);
     }
 
 }

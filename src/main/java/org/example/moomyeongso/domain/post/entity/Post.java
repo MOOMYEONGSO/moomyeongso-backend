@@ -37,11 +37,17 @@ public class Post {
     @Builder.Default
     private PostStatus status = PostStatus.ACTIVE;
 
+    // TODO: viewCount로 재정의 필요
     @Builder.Default
     private long views = 0L;
 
+    // TODO: likeCount로 재정의 필요
     @Builder.Default
     private long likes = 0L;
+
+    @Builder.Default
+    private long commentCount = 0L;
+
     @Builder.Default
     private List<String> tags = new ArrayList<>();
 

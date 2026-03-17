@@ -16,6 +16,7 @@ public interface PostRepository extends MongoRepository<Post, String> {
     List<Post> findAllByTypeAndStatusOrderByCreatedAtDesc(PostType type, PostStatus status);
     List<Post> findAllByTypeAndStatusAndUserIdNotOrderByCreatedAtDesc(PostType type, PostStatus status, String userId);
     List<Post> findAllByUserIdAndStatusOrderByCreatedAtDesc(String userId, PostStatus status);
+    List<Post> findAllByUserIdAndTypeAndStatusOrderByCreatedAtDesc(String userId, PostType type, PostStatus status);
     long countByTypeAndStatusAndCreatedAtBetween(PostType type, PostStatus status, Instant start, Instant end);
     long countByTypeAndStatus(PostType type, PostStatus status);
     Optional<Post> findByIdAndStatus(String id, PostStatus status);
