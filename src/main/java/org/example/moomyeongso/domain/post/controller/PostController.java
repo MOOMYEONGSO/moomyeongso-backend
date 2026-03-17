@@ -79,23 +79,23 @@ public class PostController {
     }
 
     @Operation(summary = "특정 글 조회", description = "게시글 ID로 특정 게시글의 상세 내용을 조회합니다.")
-    @GetMapping("/posts/{id}")
-    public ResponseEntity<ApiResponse<PostDetailResponseDto>> getPostById(@PathVariable String id) {
+    @GetMapping("/posts/{postId}")
+    public ResponseEntity<ApiResponse<PostDetailResponseDto>> getPostById(@PathVariable String postId) {
 
         String subject = SecurityUtils.getCurrentSubject();
 
-        PostDetailResponseDto response = postService.getPostById(id, subject);
+        PostDetailResponseDto response = postService.getPostById(postId, subject);
         return ApiResponse.success(HttpStatus.OK, response);
     }
 
     @Operation(summary = "댓글 작성", description = "특정 게시글에 댓글을 작성합니다.")
-    @PostMapping("/posts/{id}/comments")
+    @PostMapping("/posts/{postId}/comments")
     public ResponseEntity<ApiResponse<PostCommentCreateResponseDto>> createComment(
-            @PathVariable String id,
+            @PathVariable String postId,
             @RequestBody @Valid PostCommentCreateRequestDto request
     ) {
         String subject = SecurityUtils.getCurrentSubject();
-        PostCommentCreateResponseDto response = postService.createComment(id, request, subject);
+        PostCommentCreateResponseDto response = postService.createComment(postId, request, subject);
         return ApiResponse.success(HttpStatus.CREATED, response);
     }
 

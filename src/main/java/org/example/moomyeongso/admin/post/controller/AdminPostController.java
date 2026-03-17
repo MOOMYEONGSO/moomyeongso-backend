@@ -31,26 +31,26 @@ public class AdminPostController {
         return ResponseEntity.ok(adminPostService.getPosts(type));
     }
     @Operation(summary = "게시글 상세 조회", description = "관리자가 특정 게시글을 조회합니다.")
-    @GetMapping("/posts/{id}")
-    public ResponseEntity<AdminPostResponseDto> getPost(@PathVariable String id) {
-        return ResponseEntity.ok(adminPostService.getPostById(id));
+    @GetMapping("/posts/{postId}")
+    public ResponseEntity<AdminPostResponseDto> getPost(@PathVariable String postId) {
+        return ResponseEntity.ok(adminPostService.getPostById(postId));
     }
 
     @Operation(summary = "게시글 수정", description = "관리자가 특정 게시글을 수정합니다.")
-    @PatchMapping("/posts/{id}")
+    @PatchMapping("/posts/{postId}")
     public ResponseEntity<Void> updatePost(
-            @PathVariable String id,
+            @PathVariable String postId,
             @Valid
             @RequestBody AdminPostRequestDto request
     ) {
-        adminPostService.updatePost(id, request);
+        adminPostService.updatePost(postId, request);
         return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "게시글 삭제", description = "관리자가 특정 게시글을 삭제합니다. (Soft Delete)")
-    @DeleteMapping("/posts/{id}")
-    public ResponseEntity<Void> deletePost(@PathVariable String id) {
-        adminPostService.deletePost(id);
+    @DeleteMapping("/posts/{postId}")
+    public ResponseEntity<Void> deletePost(@PathVariable String postId) {
+        adminPostService.deletePost(postId);
         return ResponseEntity.noContent().build();
     }
 }

@@ -26,6 +26,7 @@ import org.example.moomyeongso.domain.readhistory.service.ReadHistoryService;
 import org.example.moomyeongso.domain.user.entity.User;
 import org.example.moomyeongso.domain.user.repository.UserRepository;
 import org.example.moomyeongso.domain.user.service.CoinService;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -181,14 +182,23 @@ public class PostService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        if (postCommentRepository.existsByPostIdAndAuthorIdAndStatus(post.getId(), userId, PostCommentStatus.ACTIVE)) {
+            throw new CustomException(ErrorCode.ALREADY_COMMENTED);
+        }
+
         String nickname = resolveNickname(user);
 
-        PostComment comment = postCommentRepository.save(PostComment.builder()
-                .postId(post.getId())
-                .authorId(userId)
-                .authorNickname(nickname)
-                .content(request.content())
-                .build());
+        PostComment comment;
+        try {
+            comment = postCommentRepository.save(PostComment.builder()
+                    .postId(post.getId())
+                    .authorId(userId)
+                    .authorNickname(nickname)
+                    .content(request.content())
+                    .build());
+        } catch (DuplicateKeyException ex) {
+            throw new CustomException(ErrorCode.ALREADY_COMMENTED);
+        }
 
         syncCommentCount(post.getId());
         return PostCommentCreateResponseDto.from(comment);

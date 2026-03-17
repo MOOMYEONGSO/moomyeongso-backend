@@ -29,9 +29,9 @@ public class AdminUserController {
     }
 
     @Operation(summary = "유저 상세 조회", description = "관리자가 특정 유저의 상세 정보를 조회합니다.")
-    @GetMapping("/users/{id}")
-    public ResponseEntity<AdminUserResponseDto> getUser(@PathVariable String id) {
-        return ResponseEntity.ok(adminUserService.getUserById(id));
+    @GetMapping("/users/{userId}")
+    public ResponseEntity<AdminUserResponseDto> getUser(@PathVariable String userId) {
+        return ResponseEntity.ok(adminUserService.getUserById(userId));
     }
 
     @Operation(summary = "유저 상세 조회 (닉네임)", description = "관리자가 특정 유저의 상세 정보를 닉네임으로 조회합니다. (USER만 대상)")
@@ -41,13 +41,13 @@ public class AdminUserController {
     }
 
     @Operation(summary = "유저 상태 변경", description = "관리자가 특정 유저의 상태를 변경합니다.")
-    @PatchMapping("/users/{id}/status")
+    @PatchMapping("/users/{userId}/status")
     public ResponseEntity<Void> updateUserStatus(
-            @PathVariable String id,
+            @PathVariable String userId,
             @Valid
             @RequestBody AdminUserRequestDto request
     ) {
-        adminUserService.updateUserStatus(id, request);
+        adminUserService.updateUserStatus(userId, request);
         return ResponseEntity.noContent().build();
     }
 }
