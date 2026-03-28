@@ -10,17 +10,20 @@ public record PostDetailResponseDto(
         String title,
         String content,
         long likes,
+        long commentCount,
         long views,
         Instant createdAt,
         int coin,
         List<PostCommentResponseDto> comments
 ) {
     public static PostDetailResponseDto from(Post post, int coin, List<PostCommentResponseDto> comments) {
+        long commentCount = comments == null ? 0L : comments.size();
         return new PostDetailResponseDto(
                 post.getId(),
                 post.getTitle(),
                 post.getContent(),
                 post.getLikes(),
+                commentCount,
                 post.getViews(),
                 post.getCreatedAt(),
                 coin,
