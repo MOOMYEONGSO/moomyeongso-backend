@@ -17,7 +17,7 @@ public record PostDetailResponseDto(
         List<PostCommentResponseDto> comments
 ) {
     public static PostDetailResponseDto from(Post post, int coin, List<PostCommentResponseDto> comments) {
-        long commentCount = comments == null ? 0L : comments.size();
+        long commentCount = comments.size();
         return new PostDetailResponseDto(
                 post.getId(),
                 post.getTitle(),
