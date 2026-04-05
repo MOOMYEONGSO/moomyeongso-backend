@@ -13,6 +13,7 @@ public record AdminPostResponseDto(
         String userId,
         PostType type,
         PostStatus status,
+        long commentCount,
         long views,
         long likes,
         Instant createdAt
@@ -25,6 +26,7 @@ public record AdminPostResponseDto(
                 post.getUserId(),
                 post.getType(),
                 post.getStatus(),
+                post.getCommentCount(),
                 post.getViews(),
                 post.getLikes(),
                 post.getCreatedAt()
