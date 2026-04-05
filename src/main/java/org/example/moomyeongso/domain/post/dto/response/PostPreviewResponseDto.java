@@ -1,6 +1,7 @@
 package org.example.moomyeongso.domain.post.dto.response;
 
 import org.example.moomyeongso.domain.post.entity.Post;
+import org.example.moomyeongso.domain.post.entity.PostType;
 
 import java.time.Instant;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.List;
 public record PostPreviewResponseDto(
         String postId,
         String userId,
+        PostType type,
         String title,
         String contentPreview,
         int contentLength,
@@ -36,6 +38,7 @@ public record PostPreviewResponseDto(
         return new PostPreviewResponseDto(
                 post.getId(),
                 post.getUserId(),
+                post.getType(),
                 post.getTitle(),
                 preview,
                 content.length(),
