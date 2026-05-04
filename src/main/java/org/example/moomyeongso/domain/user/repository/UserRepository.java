@@ -13,8 +13,6 @@ public interface UserRepository extends MongoRepository<User, String> {
     Optional<User> findByNicknameAndUserRole(String nickname, UserRole role);
     Optional<User> findByIdAndUserRole(String id, UserRole role);
     boolean existsByNickname(String nickname);
-    Optional<User> findByEmail(String email);
-    boolean existsByEmail(String email);
     long countByUserRoleAndCreatedAtBetween(UserRole role, Instant start, Instant end);
     long countByUserRole(UserRole role);
 }

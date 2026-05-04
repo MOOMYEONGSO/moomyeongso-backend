@@ -22,9 +22,6 @@ public class User {
     private String id;
 
     @Indexed(unique = true, sparse = true)
-    private String email;
-
-    @Indexed(unique = true, sparse = true)
     private String nickname;
 
     private String passwordHash;
@@ -48,6 +45,8 @@ public class User {
             .todayMarked(true)
             .build();
 
+    private VisitMotive visitMotive;
+
     @CreatedDate
     private LocalDateTime createdAt;
 
@@ -67,16 +66,20 @@ public class User {
     }
     */
     // 익명 -> 회원가입 시 업데이트
-    public void updateToMember(String email, String passwordHash) {
-        this.email = email;
+    public void updateToMember(String nickname, String passwordHash) {
+        this.nickname = nickname;
         this.passwordHash = passwordHash;
         this.userRole = UserRole.USER;
         this.expiresAt = null; // 회원은 TTL 만료 대상에서 제외
-        }
+    }
 
     //닉네임 적용
     public void updateNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    public void updateVisitMotive(VisitMotive visitMotive) {
+        this.visitMotive = visitMotive;
     }
 
     public void changeStatus(UserStatus status) {
