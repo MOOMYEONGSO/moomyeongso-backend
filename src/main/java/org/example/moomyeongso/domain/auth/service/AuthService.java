@@ -48,10 +48,6 @@ public class AuthService {
     @Transactional("mongoTransactionManager")
     public LoginResponseDto signup(SignupRequestDto request, String subject) {
 
-        if (userRepository.existsByEmail(request.email())) {
-            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
-        }
-
         // 익명 사용자 → 회원 전환
         if (subject != null) {
             User currentUser = userRepository.findById(subject)
@@ -61,8 +57,12 @@ public class AuthService {
                 throw new CustomException(ErrorCode.ALREADY_REGISTERED);
             }
 
+            if (!request.nickname().equals(currentUser.getNickname()) && userRepository.existsByNickname(request.nickname())) {
+                throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
+            }
+
             currentUser.updateToMember(
-                    request.email(),
+                    request.nickname(),
                     encoderUtils.encode(request.password())
             );
 
@@ -76,9 +76,13 @@ public class AuthService {
             return issueTokens(currentUser);
         }
 
+        if (userRepository.existsByNickname(request.nickname())) {
+            throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
+        }
+
         // 신규 회원가입
         User user = User.builder()
-                .email(request.email())
+                .nickname(request.nickname())
                 .passwordHash(encoderUtils.encode(request.password()))
                 .userRole(UserRole.USER)
                 .build();
@@ -91,7 +95,7 @@ public class AuthService {
 
     @Transactional("mongoTransactionManager")
     public LoginResponseDto login(LoginRequestDto request, String anonymousSubject) {
-        User user = userRepository.findByEmail(request.email())
+        User user = userRepository.findByNicknameAndUserRole(request.nickname(), UserRole.USER)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         if (!encoderUtils.matches(request.password(), user.getPasswordHash())) {

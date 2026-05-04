@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.moomyeongso.common.response.ApiResponse;
 import org.example.moomyeongso.domain.auth.core.SecurityUtils;
 import org.example.moomyeongso.domain.user.dto.request.NicknameRequestDto;
+import org.example.moomyeongso.domain.user.dto.request.VisitMotiveRequestDto;
 import org.example.moomyeongso.domain.user.dto.response.UserInfoResponseDto;
 import org.example.moomyeongso.domain.user.service.UserService;
 import org.springframework.http.HttpStatus;
@@ -22,8 +23,8 @@ public class UserController {
     private final UserService userService;
 
     @Operation(
-            summary = "닉네임 설정",
-            description = "로그인 이후 최초로 닉네임을 설정합니다."
+            summary = "닉네임 변경",
+            description = "현재 로그인한 사용자의 닉네임을 변경합니다."
     )
     @PostMapping("/nickname")
     public ResponseEntity<ApiResponse<Void>> updateNickname(
@@ -36,6 +37,20 @@ public class UserController {
     }
 
     @Operation(
+            summary = "방문동기 저장",
+            description = "현재 로그인한 사용자의 방문동기를 저장합니다."
+    )
+    @PutMapping("/visit-motive")
+    public ResponseEntity<ApiResponse<Void>> updateVisitMotive(
+            @RequestBody @Valid VisitMotiveRequestDto request) {
+
+        String userId = SecurityUtils.getCurrentSubject();
+        userService.updateVisitMotive(userId, request);
+
+        return ApiResponse.success(HttpStatus.OK);
+    }
+
+    @Operation(
             summary = "내 정보 조회",
             description = "마이페이지에서 사용할 내 정보를 반환합니다."
     )
@@ -43,6 +58,6 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserInfoResponseDto>> getMyInfo() {
         String userId = SecurityUtils.getCurrentSubject();
         UserInfoResponseDto response = userService.getMyInfo(userId);
-        return ApiResponse.success(HttpStatus.OK,response);
+        return ApiResponse.success(HttpStatus.OK, response);
     }
 }
