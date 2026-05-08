@@ -95,7 +95,7 @@ public class AuthService {
 
     @Transactional("mongoTransactionManager")
     public LoginResponseDto login(LoginRequestDto request, String anonymousSubject) {
-        User user = userRepository.findByNicknameAndUserRole(request.nickname(), UserRole.USER)
+        User user = userRepository.findByNickname(request.nickname())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         if (!encoderUtils.matches(request.password(), user.getPasswordHash())) {
