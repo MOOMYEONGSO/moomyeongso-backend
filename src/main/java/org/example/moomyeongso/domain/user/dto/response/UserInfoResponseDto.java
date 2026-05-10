@@ -2,6 +2,7 @@ package org.example.moomyeongso.domain.user.dto.response;
 
 import lombok.Builder;
 import org.example.moomyeongso.domain.user.entity.User;
+import org.example.moomyeongso.domain.user.entity.VisitMotive;
 
 import java.time.LocalDateTime;
 
@@ -9,21 +10,21 @@ import java.time.LocalDateTime;
 public record UserInfoResponseDto(
         String userId,
         String nickname,
-        String email,
         String role,
         int coin,
         LocalDateTime createdAt,
-        int currentStreak
+        int currentStreak,
+        VisitMotive visitMotive
 ) {
     public static UserInfoResponseDto from(User user) {
         return UserInfoResponseDto.builder()
                 .userId(user.getId())
                 .nickname(user.getNickname())
-                .email(user.getEmail())
                 .role(user.getUserRole().name())
                 .coin(user.getCoin())
                 .createdAt(user.getCreatedAt())
                 .currentStreak(user.getStreak().getCurrent())
+                .visitMotive(user.getVisitMotive())
                 .build();
     }
 }
