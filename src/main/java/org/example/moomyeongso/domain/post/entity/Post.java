@@ -4,6 +4,7 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -12,7 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Document(collection = "posts")
-@CompoundIndex(name = "status_tags_idx", def = "{'status': 1, 'tags': 1}")
+@CompoundIndexes({
+        @CompoundIndex(name = "status_tags_idx", def = "{'status': 1, 'tags': 1}"),
+        @CompoundIndex(name = "status_id_desc_idx", def = "{'status': 1, '_id': -1}"),
+        @CompoundIndex(name = "type_status_id_desc_idx", def = "{'type': 1, 'status': 1, '_id': -1}")
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
