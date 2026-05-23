@@ -10,6 +10,7 @@ import org.example.moomyeongso.domain.post.dto.response.PostCommentCreateRespons
 import org.example.moomyeongso.domain.post.dto.response.PostCommentResponseDto;
 import org.example.moomyeongso.domain.post.dto.response.PostCreateResponseDto;
 import org.example.moomyeongso.domain.post.dto.response.PostDetailResponseDto;
+import org.example.moomyeongso.domain.post.dto.response.PostPreviewCursorListResponse;
 import org.example.moomyeongso.domain.post.dto.response.PostPreviewListResponse;
 import org.example.moomyeongso.domain.post.dto.response.PostPreviewResponseDto;
 import org.example.moomyeongso.domain.post.entity.FirstWriteGate;
@@ -26,6 +27,8 @@ import org.example.moomyeongso.domain.readhistory.service.ReadHistoryService;
 import org.example.moomyeongso.domain.user.entity.User;
 import org.example.moomyeongso.domain.user.repository.UserRepository;
 import org.example.moomyeongso.domain.user.service.CoinService;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -46,6 +49,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PostService {
 
+    private static final int DEFAULT_POST_PREVIEW_LIMIT = 20;
+    private static final int MAX_POST_PREVIEW_LIMIT = 100;
+
     private final ZoneId KST = ZoneId.of("Asia/Seoul");
     private final PostRepository postRepository;
     private final ReadHistoryService readHistoryService;
@@ -57,28 +63,59 @@ public class PostService {
     private final UserRepository userRepository;
     private final PostCommentService postCommentService;
 
-    public PostPreviewListResponse getPostPreviews(String userId) {
-        int coin = coinService.getCoin(userId);
-        List<Post> postEntities = postRepository.findAllByStatusAndUserIdNotOrderByCreatedAtDesc(PostStatus.ACTIVE, userId);
-        Map<String, Long> commentCounts = postCommentService.getActiveCommentCounts(
-                postEntities.stream().map(Post::getId).toList()
-        );
-        List<PostPreviewResponseDto> posts = postEntities.stream()
-                .map(post -> PostPreviewResponseDto.from(post, commentCounts.getOrDefault(post.getId(), 0L)))
-                .toList();
-        return PostPreviewListResponse.of(posts, coin);
+    public PostPreviewCursorListResponse getPostPreviews(String userId) {
+        return getPostPreviews(userId, null, DEFAULT_POST_PREVIEW_LIMIT);
     }
 
-    public PostPreviewListResponse getPostPreviews(PostType type, String userId) {
+    public PostPreviewCursorListResponse getPostPreviews(String userId, String cursor, int limit) {
+        return getPostPreviews(null, userId, cursor, limit);
+    }
+
+    public PostPreviewCursorListResponse getPostPreviews(PostType type, String userId) {
+        return getPostPreviews(type, userId, null, DEFAULT_POST_PREVIEW_LIMIT);
+    }
+
+    public PostPreviewCursorListResponse getPostPreviews(PostType type, String userId, String cursor, int limit) {
+        validatePostPreviewLimit(limit);
+
         int coin = coinService.getCoin(userId);
-        List<Post> postEntities = postRepository.findAllByTypeAndStatusAndUserIdNotOrderByCreatedAtDesc(type, PostStatus.ACTIVE, userId);
+        List<Post> fetchedPosts = fetchPostPreviewPage(type, userId, normalizeCursor(cursor), limit);
+        boolean hasNext = fetchedPosts.size() > limit;
+        List<Post> postEntities = hasNext ? fetchedPosts.subList(0, limit) : fetchedPosts;
         Map<String, Long> commentCounts = postCommentService.getActiveCommentCounts(
                 postEntities.stream().map(Post::getId).toList()
         );
         List<PostPreviewResponseDto> posts = postEntities.stream()
                 .map(post -> PostPreviewResponseDto.from(post, commentCounts.getOrDefault(post.getId(), 0L)))
                 .toList();
-        return PostPreviewListResponse.of(posts, coin);
+        return PostPreviewCursorListResponse.of(posts, coin, hasNext ? resolveNextCursor(posts) : null);
+    }
+
+    private void validatePostPreviewLimit(int limit) {
+        if (limit <= 0 || limit > MAX_POST_PREVIEW_LIMIT) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+    }
+
+    private List<Post> fetchPostPreviewPage(PostType type, String userId, String cursor, int limit) {
+        Pageable pageable = PageRequest.of(0, limit + 1);
+        if (type == null) {
+            return cursor == null
+                    ? postRepository.findAllByStatusAndUserIdNotOrderByIdDesc(PostStatus.ACTIVE, userId, pageable)
+                    : postRepository.findAllByStatusAndUserIdNotAndIdLessThanOrderByIdDesc(PostStatus.ACTIVE, userId, cursor, pageable);
+        }
+
+        return cursor == null
+                ? postRepository.findAllByTypeAndStatusAndUserIdNotOrderByIdDesc(type, PostStatus.ACTIVE, userId, pageable)
+                : postRepository.findAllByTypeAndStatusAndUserIdNotAndIdLessThanOrderByIdDesc(type, PostStatus.ACTIVE, userId, cursor, pageable);
+    }
+
+    private String normalizeCursor(String cursor) {
+        return cursor == null || cursor.isBlank() ? null : cursor;
+    }
+
+    private String resolveNextCursor(List<PostPreviewResponseDto> posts) {
+        return posts.isEmpty() ? null : posts.get(posts.size() - 1).postId();
     }
 
     @Transactional("mongoTransactionManager")
