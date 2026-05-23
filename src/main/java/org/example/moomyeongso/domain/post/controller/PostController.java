@@ -1,6 +1,7 @@
 package org.example.moomyeongso.domain.post.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.example.moomyeongso.domain.post.dto.request.PostCreateRequestDto;
 import org.example.moomyeongso.domain.post.dto.response.PostCommentCreateResponseDto;
 import org.example.moomyeongso.domain.post.dto.response.PostCreateResponseDto;
 import org.example.moomyeongso.domain.post.dto.response.PostDetailResponseDto;
+import org.example.moomyeongso.domain.post.dto.response.PostPreviewCursorListResponse;
 import org.example.moomyeongso.domain.post.dto.response.PostPreviewListResponse;
 import org.example.moomyeongso.domain.post.dto.response.PostPreviewResponseDto;
 import org.example.moomyeongso.domain.post.entity.PostType;
@@ -33,18 +35,22 @@ public class PostController {
 
     @Operation(
             summary = "글 조회",
-            description = "게시물의 미리보기 리스트를 반환합니다. 'type' 쿼리 파라미터로 특정 타입의 글만 조회할 수 있습니다."
+            description = "게시물의 미리보기 리스트를 최신순으로 반환합니다. 'type' 쿼리 파라미터로 특정 타입의 글만 조회할 수 있고, cursor에는 마지막으로 로드한 postId를 전달합니다."
     )
     @GetMapping("/posts")
-    public ResponseEntity<ApiResponse<PostPreviewListResponse>> getPosts(
-            @RequestParam(required = false) PostType type) {
+    public ResponseEntity<ApiResponse<PostPreviewCursorListResponse>> getPosts(
+            @RequestParam(required = false) PostType type,
+            @Parameter(description = "마지막으로 로드한 게시물의 postId")
+            @RequestParam(required = false) String cursor,
+            @Parameter(description = "가져올 글 수")
+            @RequestParam(defaultValue = "20") int limit) {
 
         String userId = SecurityUtils.getCurrentSubject();
 
-        PostPreviewListResponse response =
+        PostPreviewCursorListResponse response =
                 (type == null)
-                        ? postService.getPostPreviews(userId)
-                        : postService.getPostPreviews(type, userId);
+                        ? postService.getPostPreviews(userId, cursor, limit)
+                        : postService.getPostPreviews(type, userId, cursor, limit);
 
         return ApiResponse.success(HttpStatus.OK, response);
     }
