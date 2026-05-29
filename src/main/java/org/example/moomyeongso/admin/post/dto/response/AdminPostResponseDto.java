@@ -3,8 +3,11 @@ package org.example.moomyeongso.admin.post.dto.response;
 import org.example.moomyeongso.domain.post.entity.Post;
 import org.example.moomyeongso.domain.post.entity.PostStatus;
 import org.example.moomyeongso.domain.post.entity.PostType;
+import org.example.moomyeongso.domain.post.dto.response.PostImageResponseDto;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 
 public record AdminPostResponseDto(
         String postId,
@@ -16,6 +19,7 @@ public record AdminPostResponseDto(
         long commentCount,
         long views,
         long likes,
+        List<PostImageResponseDto> images,
         Instant createdAt
 ) {
     public static AdminPostResponseDto from(Post post) {
@@ -29,6 +33,9 @@ public record AdminPostResponseDto(
                 post.getCommentCount(),
                 post.getViews(),
                 post.getLikes(),
+                Optional.ofNullable(post.getImages()).orElse(List.of()).stream()
+                        .map(PostImageResponseDto::from)
+                        .toList(),
                 post.getCreatedAt()
         );
     }

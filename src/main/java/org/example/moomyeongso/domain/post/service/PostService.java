@@ -23,6 +23,7 @@ import org.example.moomyeongso.domain.post.entity.PostType;
 import org.example.moomyeongso.domain.post.repository.PostCommentRepository;
 import org.example.moomyeongso.domain.post.repository.PostRepository;
 import org.example.moomyeongso.domain.post.repository.RandomPostFinder;
+import org.example.moomyeongso.domain.postimage.service.PostImageService;
 import org.example.moomyeongso.domain.readhistory.service.ReadHistoryService;
 import org.example.moomyeongso.domain.user.entity.User;
 import org.example.moomyeongso.domain.user.repository.UserRepository;
@@ -62,6 +63,7 @@ public class PostService {
     private final PostCommentRepository postCommentRepository;
     private final UserRepository userRepository;
     private final PostCommentService postCommentService;
+    private final PostImageService postImageService;
 
     public PostPreviewCursorListResponse getPostPreviews(String userId) {
         return getPostPreviews(userId, null, DEFAULT_POST_PREVIEW_LIMIT);
@@ -131,6 +133,9 @@ public class PostService {
                 .tags(request.tags())
                 .userId(userId)
                 .build());
+
+        post.attachImages(postImageService.attachImages(userId, post.getId(), request.imageIds()));
+        postRepository.save(post);
 
         boolean isFirstToday;
         try {

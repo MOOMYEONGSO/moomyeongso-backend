@@ -28,7 +28,14 @@ public enum ErrorCode {
     TOPIC_NOT_FOUND(HttpStatus.NOT_FOUND, 1020, "오늘의 주제를 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, 1021, "해당 댓글을 찾을 수 없습니다."),
     ALREADY_COMMENTED(HttpStatus.CONFLICT, 1022, "이미 이 게시글에 댓글을 작성했습니다."),
-    DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST, 1023, "이미 사용 중인 이메일입니다.");
+    DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST, 1023, "이미 사용 중인 이메일입니다."),
+    TOO_MANY_POST_IMAGES(HttpStatus.BAD_REQUEST, 1024, "이미지는 최대 5장까지 첨부할 수 있습니다."),
+    IMAGE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, 1025, "이미지 파일은 10MB 이하만 업로드할 수 있습니다."),
+    UNSUPPORTED_IMAGE_TYPE(HttpStatus.BAD_REQUEST, 1026, "지원하지 않는 이미지 형식입니다."),
+    INVALID_IMAGE(HttpStatus.BAD_REQUEST, 1027, "올바르지 않은 이미지 파일입니다."),
+    IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 1028, "이미지 업로드에 실패했습니다."),
+    POST_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, 1029, "첨부 이미지를 찾을 수 없습니다."),
+    IMAGE_ALREADY_ATTACHED(HttpStatus.CONFLICT, 1030, "이미 다른 글에 첨부된 이미지입니다.");
 
     private final HttpStatus status;
     private final int code;
