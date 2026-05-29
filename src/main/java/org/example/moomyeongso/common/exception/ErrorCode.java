@@ -27,7 +27,8 @@ public enum ErrorCode {
     ACCESS_DENIED(HttpStatus.FORBIDDEN, 1019, "접근 권한이 없습니다."),
     TOPIC_NOT_FOUND(HttpStatus.NOT_FOUND, 1020, "오늘의 주제를 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, 1021, "해당 댓글을 찾을 수 없습니다."),
-    ALREADY_COMMENTED(HttpStatus.CONFLICT, 1022, "이미 이 게시글에 댓글을 작성했습니다.");
+    ALREADY_COMMENTED(HttpStatus.CONFLICT, 1022, "이미 이 게시글에 댓글을 작성했습니다."),
+    DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST, 1023, "이미 사용 중인 이메일입니다.");
 
     private final HttpStatus status;
     private final int code;

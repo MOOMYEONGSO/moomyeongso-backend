@@ -22,6 +22,9 @@ public class User {
     private String id;
 
     @Indexed(unique = true, sparse = true)
+    private String email;
+
+    @Indexed(unique = true, sparse = true)
     private String nickname;
 
     private String passwordHash;
@@ -66,7 +69,8 @@ public class User {
     }
     */
     // 익명 -> 회원가입 시 업데이트
-    public void updateToMember(String nickname, String passwordHash) {
+    public void updateToMember(String email, String nickname, String passwordHash) {
+        this.email = email;
         this.nickname = nickname;
         this.passwordHash = passwordHash;
         this.userRole = UserRole.USER;
