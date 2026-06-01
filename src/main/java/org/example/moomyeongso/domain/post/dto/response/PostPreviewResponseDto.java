@@ -19,6 +19,7 @@ public record PostPreviewResponseDto(
         long commentCount,
         // TODO: viewCount로 재정의 필요
         long views,
+        String thumbnailUrl,
         Instant createdAt
 ) {
     private static final int PREVIEW_MAX_LENGTH = 100;
@@ -46,7 +47,15 @@ public record PostPreviewResponseDto(
                 post.getLikes(),
                 commentCount,
                 post.getViews(),
+                resolveThumbnailUrl(post),
                 post.getCreatedAt()
         );
+    }
+
+    private static String resolveThumbnailUrl(Post post) {
+        if (post.getImages() == null || post.getImages().isEmpty()) {
+            return null;
+        }
+        return post.getImages().get(0).getThumbnailUrl();
     }
 }

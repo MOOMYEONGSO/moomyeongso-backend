@@ -10,9 +10,11 @@ import java.util.Optional;
 
 public interface UserRepository extends MongoRepository<User, String> {
     List<User> findAllByUserRole(UserRole role);
+    Optional<User> findByEmail(String email);
     Optional<User> findByNickname(String nickname);
     Optional<User> findByNicknameAndUserRole(String nickname, UserRole role);
     Optional<User> findByIdAndUserRole(String id, UserRole role);
+    boolean existsByEmail(String email);
     boolean existsByNickname(String nickname);
     long countByUserRoleAndCreatedAtBetween(UserRole role, Instant start, Instant end);
     long countByUserRole(UserRole role);
