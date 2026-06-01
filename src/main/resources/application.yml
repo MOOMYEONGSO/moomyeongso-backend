@@ -11,8 +11,18 @@ refresh:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  post-images:
+    max-images-per-post: 5
+    max-file-size-bytes: 10485760
+    thumbnail-size: 512
+    temporary-retention-hours: 24
+    deleted-retention-days: 7
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 55MB
   data:
     mongodb:
       uri: ${MONGODB_URI}
@@ -39,3 +49,12 @@ security:
 discord:
   webhook:
     url: ${DISCORD_WEBHOOK_URL}
+
+cloud:
+  aws:
+    region: ${AWS_REGION:ap-northeast-2}
+    s3:
+      bucket: ${AWS_S3_BUCKET:}
+      public-base-url: ${AWS_S3_PUBLIC_BASE_URL:}
+      original-prefix: posts/original
+      thumbnail-prefix: posts/thumbnails

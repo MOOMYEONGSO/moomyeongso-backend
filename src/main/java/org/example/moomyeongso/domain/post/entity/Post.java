@@ -56,6 +56,9 @@ public class Post {
     @Builder.Default
     private List<String> tags = new ArrayList<>();
 
+    @Builder.Default
+    private List<PostImageAttachment> images = new ArrayList<>();
+
     @CreatedDate
     private Instant createdAt;
 
@@ -73,5 +76,9 @@ public class Post {
 
     public void markActive() {
         this.status = PostStatus.ACTIVE;
+    }
+
+    public void attachImages(List<PostImageAttachment> images) {
+        this.images = images == null ? new ArrayList<>() : new ArrayList<>(images);
     }
 }

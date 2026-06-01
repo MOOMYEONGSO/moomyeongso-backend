@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -76,6 +78,26 @@ public class GlobalExceptionHandler {
                 ErrorCode.INVALID_JSON.getStatus(),
                 ErrorCode.INVALID_JSON.getCode(),
                 ErrorCode.INVALID_JSON.getMessage()
+        );
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex) {
+        log.warn("Multipart upload too large: {}", ex.getMessage());
+        return ApiResponse.error(
+                ErrorCode.IMAGE_TOO_LARGE.getStatus(),
+                ErrorCode.IMAGE_TOO_LARGE.getCode(),
+                ErrorCode.IMAGE_TOO_LARGE.getMessage()
+        );
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMultipartException(MultipartException ex) {
+        log.warn("Invalid multipart request: {}", ex.getMessage());
+        return ApiResponse.error(
+                ErrorCode.INVALID_INPUT.getStatus(),
+                ErrorCode.INVALID_INPUT.getCode(),
+                ErrorCode.INVALID_INPUT.getMessage()
         );
     }
 
