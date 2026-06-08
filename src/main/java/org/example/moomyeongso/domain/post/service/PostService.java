@@ -6,6 +6,7 @@ import org.example.moomyeongso.common.exception.CustomException;
 import org.example.moomyeongso.common.exception.ErrorCode;
 import org.example.moomyeongso.domain.post.dto.request.PostCommentCreateRequestDto;
 import org.example.moomyeongso.domain.post.dto.request.PostCreateRequestDto;
+import org.example.moomyeongso.domain.post.dto.request.PostPhotoCreateRequestDto;
 import org.example.moomyeongso.domain.post.dto.response.PostCommentCreateResponseDto;
 import org.example.moomyeongso.domain.post.dto.response.PostCommentResponseDto;
 import org.example.moomyeongso.domain.post.dto.response.PostCreateResponseDto;
@@ -123,17 +124,34 @@ public class PostService {
     @Transactional("mongoTransactionManager")
     public PostCreateResponseDto createPost(PostCreateRequestDto request, String userId) {
         request.type().validateContentLength(request.content());
+        return createPost(request.content(), request.type(), request.tags(), List.of(), userId);
+    }
 
+    @Transactional("mongoTransactionManager")
+    public PostCreateResponseDto createPhotoPost(PostPhotoCreateRequestDto request, List<String> imageIds, String userId) {
+        if (imageIds == null || imageIds.isEmpty()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+        return createPost("", request.type(), request.tags(), imageIds, userId);
+    }
+
+    private PostCreateResponseDto createPost(
+            String content,
+            PostType type,
+            List<String> tags,
+            List<String> imageIds,
+            String userId
+    ) {
         int coin = coinService.rewardForPost(userId, 1);
 
         Post post = postRepository.save(Post.builder()
-                .content(request.content())
-                .type(request.type())
-                .tags(request.tags())
+                .content(content)
+                .type(type)
+                .tags(tags)
                 .userId(userId)
                 .build());
 
-        post.attachImages(postImageService.attachImages(userId, post.getId(), request.imageIds()));
+        post.attachImages(postImageService.attachImages(userId, post.getId(), imageIds));
         postRepository.save(post);
 
         boolean isFirstToday;
