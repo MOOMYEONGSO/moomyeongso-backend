@@ -45,7 +45,7 @@ public class AdminPostService {
     public void updatePost(String id, AdminPostRequestDto request) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-        post.updateByAdmin(request.title(), request.content());
+        post.updateByAdmin(request.content());
         postRepository.save(post);
     }
 
