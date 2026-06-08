@@ -6,7 +6,7 @@ import org.example.moomyeongso.common.exception.CustomException;
 import org.example.moomyeongso.common.exception.ErrorCode;
 import org.example.moomyeongso.domain.post.dto.request.PostCommentCreateRequestDto;
 import org.example.moomyeongso.domain.post.dto.request.PostCreateRequestDto;
-import org.example.moomyeongso.domain.post.dto.request.PostPhotoCreateRequestDto;
+import org.example.moomyeongso.domain.post.dto.request.ImagePostCreateRequestDto;
 import org.example.moomyeongso.domain.post.dto.response.PostCommentCreateResponseDto;
 import org.example.moomyeongso.domain.post.dto.response.PostCommentResponseDto;
 import org.example.moomyeongso.domain.post.dto.response.PostCreateResponseDto;
@@ -128,7 +128,7 @@ public class PostService {
     }
 
     @Transactional("mongoTransactionManager")
-    public PostCreateResponseDto createPhotoPost(PostPhotoCreateRequestDto request, List<String> imageIds, String userId) {
+    public PostCreateResponseDto createImagePost(ImagePostCreateRequestDto request, List<String> imageIds, String userId) {
         if (imageIds == null || imageIds.isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
