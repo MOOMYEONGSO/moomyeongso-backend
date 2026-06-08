@@ -13,6 +13,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 
 import java.util.Objects;
@@ -78,6 +79,16 @@ public class GlobalExceptionHandler {
                 ErrorCode.INVALID_JSON.getStatus(),
                 ErrorCode.INVALID_JSON.getCode(),
                 ErrorCode.INVALID_JSON.getMessage()
+        );
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMissingServletRequestPart(MissingServletRequestPartException ex) {
+        log.warn("Missing multipart request part: {}", ex.getRequestPartName());
+        return ApiResponse.error(
+                ErrorCode.INVALID_INPUT.getStatus(),
+                ErrorCode.INVALID_INPUT.getCode(),
+                ErrorCode.INVALID_INPUT.getMessage()
         );
     }
 

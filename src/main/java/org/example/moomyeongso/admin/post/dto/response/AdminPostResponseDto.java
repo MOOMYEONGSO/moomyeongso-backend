@@ -11,7 +11,6 @@ import java.util.Optional;
 
 public record AdminPostResponseDto(
         String postId,
-        String title,
         String content,
         String userId,
         PostType type,
@@ -25,7 +24,6 @@ public record AdminPostResponseDto(
     public static AdminPostResponseDto from(Post post) {
         return new AdminPostResponseDto(
                 post.getId(),
-                post.getTitle(),
                 post.getContent(),
                 post.getUserId(),
                 post.getType(),
