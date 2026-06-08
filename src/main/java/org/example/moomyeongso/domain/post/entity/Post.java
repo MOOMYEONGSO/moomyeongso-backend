@@ -29,8 +29,6 @@ public class Post {
     @Id
     private String id;
 
-    private String title;
-
     private String content;
 
     //멤버 식별용 ID
@@ -62,8 +60,7 @@ public class Post {
     @CreatedDate
     private Instant createdAt;
 
-    public void updateByAdmin(String title, String content) {
-        this.title = title;
+    public void updateByAdmin(String content) {
         this.content = content;
     }
     public void deleteByAdmin() {

@@ -9,8 +9,6 @@ import java.util.List;
 
 public record PostCreateRequestDto(
         @NotBlank
-        String title,
-        @NotBlank
         String content,
         @NotNull
         PostType type,

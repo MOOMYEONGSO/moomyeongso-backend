@@ -127,7 +127,6 @@ public class PostService {
         int coin = coinService.rewardForPost(userId, 1);
 
         Post post = postRepository.save(Post.builder()
-                .title(request.title())
                 .content(request.content())
                 .type(request.type())
                 .tags(request.tags())
