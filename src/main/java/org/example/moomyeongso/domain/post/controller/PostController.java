@@ -72,7 +72,7 @@ public class PostController {
     }
     @Operation(
             summary = "글 작성",
-            description = "새로운 게시글을 작성합니다"
+            description = "새로운 텍스트 게시글을 작성합니다. type은 TEXT로 저장되고, from/to가 비어 있으면 익명으로 저장됩니다."
     )
     @PostMapping("/posts")
     public ResponseEntity<ApiResponse<PostCreateResponseDto>> createPost(
