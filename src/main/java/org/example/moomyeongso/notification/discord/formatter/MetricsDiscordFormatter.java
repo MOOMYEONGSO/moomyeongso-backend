@@ -36,21 +36,18 @@ public class MetricsDiscordFormatter {
             📊 **오늘의 무명소**
             
             📝 **작성된 글**
-            - 짧은 기록 : **%d개** (누적 %d개)
-            - 깊은 고민 : **%d개** (누적 %d개)
-            - 오늘의 주제 : **%d개** (누적 %d개)
+            - 텍스트 : **%d개** (누적 %d개)
+            - 이미지 : **%d개** (누적 %d개)
     
             👤 **회원 현황**
             - 신규 회원가입 : **%d명** (누적 %d명)
             - 익명 이용자 : **%d명**
             - 익명 대비 신규 회원 비율 : **%.1f%%**
             """.formatted(
-                metrics.shortPosts(),
-                metrics.shortTotalPosts(),
-                metrics.longPosts(),
-                metrics.longTotalPosts(),
-                metrics.todayPosts(),
-                metrics.todayTotalPosts(),
+                metrics.textPosts(),
+                metrics.textTotalPosts(),
+                metrics.imagePosts(),
+                metrics.imageTotalPosts(),
                 metrics.members(),
                 metrics.totalMembers(),
                 metrics.anonymous(),
@@ -60,4 +57,3 @@ public class MetricsDiscordFormatter {
         return new DiscordTextDto(content);
     }
 }
-

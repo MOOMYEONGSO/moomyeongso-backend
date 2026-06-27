@@ -23,7 +23,7 @@ public class AdminPostController {
 
     private final AdminPostService adminPostService;
 
-    @Operation(summary = "게시글 목록 조회", description = "관리자가 게시글을 조회합니다. type 파라미터로 전체/짧은글/긴글을 구분할 수 있습니다.")
+    @Operation(summary = "게시글 목록 조회", description = "관리자가 게시글을 조회합니다. type 파라미터로 TEXT/IMAGE를 구분할 수 있습니다.")
     @GetMapping("/posts")
     public ResponseEntity<List<AdminPostResponseDto>> getPosts(
             @RequestParam(required = false) PostType type
