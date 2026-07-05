@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.example.moomyeongso.common.response.ApiResponse;
 import org.example.moomyeongso.domain.auth.core.SecurityUtils;
 import org.example.moomyeongso.domain.user.dto.request.NicknameRequestDto;
-import org.example.moomyeongso.domain.user.dto.request.VisitMotiveRequestDto;
 import org.example.moomyeongso.domain.user.dto.response.UserInfoResponseDto;
 import org.example.moomyeongso.domain.user.service.UserService;
 import org.springframework.http.HttpStatus;
@@ -32,20 +31,6 @@ public class UserController {
 
         String userId = SecurityUtils.getCurrentSubject();
         userService.updateNickname(userId, request.nickname());
-
-        return ApiResponse.success(HttpStatus.OK);
-    }
-
-    @Operation(
-            summary = "방문동기 저장",
-            description = "현재 로그인한 사용자의 방문동기를 저장합니다."
-    )
-    @PutMapping("/visit-motive")
-    public ResponseEntity<ApiResponse<Void>> updateVisitMotive(
-            @RequestBody @Valid VisitMotiveRequestDto request) {
-
-        String userId = SecurityUtils.getCurrentSubject();
-        userService.updateVisitMotive(userId, request);
 
         return ApiResponse.success(HttpStatus.OK);
     }

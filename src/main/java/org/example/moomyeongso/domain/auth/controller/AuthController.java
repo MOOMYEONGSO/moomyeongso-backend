@@ -28,7 +28,7 @@ public class AuthController {
 
     @Operation(
             summary = "회원가입",
-            description = "이메일, 닉네임, 숫자 4자리 비밀번호를 입력받아 회원가입을 수행합니다. 익명 사용자 토큰이 있으면 해당 계정을 회원으로 전환합니다."
+            description = "이메일, 닉네임, 숫자 4자리 비밀번호, 방문동기를 입력받아 회원가입을 수행합니다. 익명 사용자 토큰이 있으면 해당 계정을 회원으로 전환합니다."
     )
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<LoginResponseDto>> signup(
