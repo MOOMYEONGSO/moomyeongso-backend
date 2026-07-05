@@ -3,7 +3,6 @@ package org.example.moomyeongso.domain.user.service;
 import lombok.RequiredArgsConstructor;
 import org.example.moomyeongso.common.exception.CustomException;
 import org.example.moomyeongso.common.exception.ErrorCode;
-import org.example.moomyeongso.domain.user.dto.request.VisitMotiveRequestDto;
 import org.example.moomyeongso.domain.user.dto.response.UserInfoResponseDto;
 import org.example.moomyeongso.domain.user.entity.User;
 import org.example.moomyeongso.domain.user.repository.UserRepository;
@@ -24,14 +23,6 @@ public class UserService {
         }
 
         user.updateNickname(nickname);
-        userRepository.save(user);
-    }
-
-    public void updateVisitMotive(String userId, VisitMotiveRequestDto request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-        user.updateVisitMotive(request.visitMotive());
         userRepository.save(user);
     }
 
