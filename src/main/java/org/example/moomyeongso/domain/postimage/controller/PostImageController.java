@@ -28,7 +28,10 @@ public class PostImageController {
 
     @Operation(
             summary = "이미지 게시글 작성",
-            description = "이미지만 업로드해 게시글 작성을 완료합니다. request 파트에는 선택 from/to/tags를 전달하고, images 파트에는 1~5개의 이미지를 전달합니다. 게시글 type은 IMAGE로 저장됩니다."
+            description = "이미지만 업로드해 게시글 작성을 완료합니다. "
+                    + "request 파트에는 선택 from/to/tags를 전달하고, "
+                    + "images 파트에는 1~5개의 이미지를 전달합니다. "
+                    + "게시글 type은 IMAGE로 저장됩니다."
     )
     @PostMapping(value = "/post-images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<PostCreateResponseDto>> createImagePost(
