@@ -68,7 +68,8 @@ public class AuthService {
             currentUser.updateToMember(
                     request.email(),
                     request.nickname(),
-                    encoderUtils.encode(request.password())
+                    encoderUtils.encode(request.password()),
+                    request.visitMotive()
             );
 
             userRepository.save(currentUser);
@@ -94,6 +95,7 @@ public class AuthService {
                 .email(request.email())
                 .nickname(request.nickname())
                 .passwordHash(encoderUtils.encode(request.password()))
+                .visitMotive(request.visitMotive())
                 .userRole(UserRole.USER)
                 .build();
 

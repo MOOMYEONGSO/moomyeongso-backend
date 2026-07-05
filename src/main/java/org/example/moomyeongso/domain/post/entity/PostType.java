@@ -4,9 +4,8 @@ import org.example.moomyeongso.common.exception.CustomException;
 import org.example.moomyeongso.common.exception.ErrorCode;
 
 public enum PostType {
-    MOOMYEONGSO(30, ErrorCode.CONTENT_TOO_SHORT),
-    DIARY(30, ErrorCode.CONTENT_TOO_SHORT),
-    TODAY(30, ErrorCode.CONTENT_TOO_SHORT);
+    TEXT(30, ErrorCode.CONTENT_TOO_SHORT),
+    IMAGE(0, ErrorCode.CONTENT_TOO_SHORT);
 
     private final int minLength;
     private final ErrorCode errorCodeForTooShort;
@@ -17,7 +16,8 @@ public enum PostType {
     }
 
     public void validateContentLength(String content) {
-        if (content.length() < this.minLength) {
+        String normalizedContent = content == null ? "" : content;
+        if (normalizedContent.length() < this.minLength) {
             throw new CustomException(this.errorCodeForTooShort);
         }
     }

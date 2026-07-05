@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +22,14 @@ public interface PostRepository extends MongoRepository<Post, String> {
     List<Post> findAllByUserIdAndStatusOrderByCreatedAtDesc(String userId, PostStatus status);
     List<Post> findAllByUserIdAndTypeAndStatusOrderByCreatedAtDesc(String userId, PostType type, PostStatus status);
     long countByTypeAndStatusAndCreatedAtBetween(PostType type, PostStatus status, Instant start, Instant end);
+    long countByTypeAndStatusAndUserIdNotInAndCreatedAtBetween(
+            PostType type,
+            PostStatus status,
+            Collection<String> excludedUserIds,
+            Instant start,
+            Instant end
+    );
     long countByTypeAndStatus(PostType type, PostStatus status);
+    long countByTypeAndStatusAndUserIdNotIn(PostType type, PostStatus status, Collection<String> excludedUserIds);
     Optional<Post> findByIdAndStatus(String id, PostStatus status);
 }

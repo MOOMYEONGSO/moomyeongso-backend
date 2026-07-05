@@ -123,8 +123,8 @@ public class PostService {
 
     @Transactional("mongoTransactionManager")
     public PostCreateResponseDto createPost(PostCreateRequestDto request, String userId) {
-        request.type().validateContentLength(request.content());
-        return createPost(request.content(), request.type(), request.tags(), List.of(), userId);
+        PostType.TEXT.validateContentLength(request.content());
+        return createPost(request.content(), PostType.TEXT, request.from(), request.to(), request.tags(), List.of(), userId);
     }
 
     @Transactional("mongoTransactionManager")
@@ -132,12 +132,14 @@ public class PostService {
         if (imageIds == null || imageIds.isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
-        return createPost("", request.type(), request.tags(), imageIds, userId);
+        return createPost("", PostType.IMAGE, request.from(), request.to(), request.tags(), imageIds, userId);
     }
 
     private PostCreateResponseDto createPost(
             String content,
             PostType type,
+            String from,
+            String to,
             List<String> tags,
             List<String> imageIds,
             String userId
@@ -147,6 +149,8 @@ public class PostService {
         Post post = postRepository.save(Post.builder()
                 .content(content)
                 .type(type)
+                .from(from)
+                .to(to)
                 .tags(tags)
                 .userId(userId)
                 .build());

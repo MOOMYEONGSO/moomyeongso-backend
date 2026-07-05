@@ -26,6 +26,8 @@ import java.util.List;
 @EqualsAndHashCode(of = "id")
 public class Post {
 
+    public static final String DEFAULT_DISPLAY_NAME = "익명";
+
     @Id
     private String id;
 
@@ -36,6 +38,12 @@ public class Post {
     private String userId;
 
     private PostType type;
+
+    @Builder.Default
+    private String from = DEFAULT_DISPLAY_NAME;
+
+    @Builder.Default
+    private String to = DEFAULT_DISPLAY_NAME;
 
     @Builder.Default
     private PostStatus status = PostStatus.ACTIVE;
@@ -77,5 +85,17 @@ public class Post {
 
     public void attachImages(List<PostImageAttachment> images) {
         this.images = images == null ? new ArrayList<>() : new ArrayList<>(images);
+    }
+
+    public String getFrom() {
+        return normalizeDisplayName(from);
+    }
+
+    public String getTo() {
+        return normalizeDisplayName(to);
+    }
+
+    private String normalizeDisplayName(String value) {
+        return value == null || value.isBlank() ? DEFAULT_DISPLAY_NAME : value.trim();
     }
 }

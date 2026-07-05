@@ -69,10 +69,11 @@ public class User {
     }
     */
     // 익명 -> 회원가입 시 업데이트
-    public void updateToMember(String email, String nickname, String passwordHash) {
+    public void updateToMember(String email, String nickname, String passwordHash, VisitMotive visitMotive) {
         this.email = email;
         this.nickname = nickname;
         this.passwordHash = passwordHash;
+        this.visitMotive = visitMotive;
         this.userRole = UserRole.USER;
         this.expiresAt = null; // 회원은 TTL 만료 대상에서 제외
     }
@@ -80,10 +81,6 @@ public class User {
     //닉네임 적용
     public void updateNickname(String nickname) {
         this.nickname = nickname;
-    }
-
-    public void updateVisitMotive(VisitMotive visitMotive) {
-        this.visitMotive = visitMotive;
     }
 
     public void changeStatus(UserStatus status) {

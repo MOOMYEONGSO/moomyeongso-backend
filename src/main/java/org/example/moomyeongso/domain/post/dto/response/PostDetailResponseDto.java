@@ -10,6 +10,8 @@ import java.util.Optional;
 public record PostDetailResponseDto(
         String postId,
         PostType type,
+        String from,
+        String to,
         String content,
         long likes,
         long commentCount,
@@ -27,6 +29,8 @@ public record PostDetailResponseDto(
         return new PostDetailResponseDto(
                 post.getId(),
                 post.getType(),
+                post.getFrom(),
+                post.getTo(),
                 post.getContent(),
                 post.getLikes(),
                 commentCount,
