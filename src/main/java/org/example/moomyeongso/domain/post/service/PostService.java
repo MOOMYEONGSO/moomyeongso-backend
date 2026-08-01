@@ -43,6 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -53,6 +54,8 @@ public class PostService {
 
     private static final int DEFAULT_POST_PREVIEW_LIMIT = 20;
     private static final int MAX_POST_PREVIEW_LIMIT = 100;
+    private static final int TAGGED_RANDOM_RECOMMENDATION_COUNT = 3;
+    private static final int DEFAULT_RANDOM_RECOMMENDATION_COUNT = 7;
 
     private final ZoneId KST = ZoneId.of("Asia/Seoul");
     private final PostRepository postRepository;
@@ -296,44 +299,53 @@ public class PostService {
                 .toList();
     }
 
-    public PostPreviewListResponse getRandomPostPreviews(int count, List<String> tags, int reroll, String userId) {
-        if (count <= 0) {
-            throw new CustomException(ErrorCode.INVALID_INPUT);
-        }
-
+    public PostPreviewListResponse getRandomPostPreviews(List<String> tags, String userId) {
         int coin = coinService.getCoin(userId);
-        String selectedTag = selectTagForStep(tags, reroll);
-        List<PostPreviewResponseDto> posts = fetchRandomPostPreviews(count, selectedTag, userId);
+        List<Post> postEntities = fetchRandomPostEntities(tags, userId);
+        Map<String, Long> commentCounts = postCommentService.getActiveCommentCounts(
+                postEntities.stream().map(Post::getId).toList()
+        );
+        List<PostPreviewResponseDto> posts = postEntities.stream()
+                .map(post -> PostPreviewResponseDto.from(post, commentCounts.getOrDefault(post.getId(), 0L)))
+                .toList();
         return PostPreviewListResponse.of(posts, coin);
     }
 
-    private String selectTagForStep(List<String> tags, int reroll) {
-        int index = reroll <= 0 ? 0 : reroll == 1 ? 1 : -1;
-        return selectTagByPriority(tags, index);
-    }
-
-    private List<PostPreviewResponseDto> fetchRandomPostPreviews(int count, String tag, String userId) {
-        List<Post> posts;
-        if (tag == null) {
-            posts = randomPostFinder.findRandomByStatusExcludingUser(PostStatus.ACTIVE, count, userId);
-        } else {
-            posts = randomPostFinder.findRandomByStatusAndTagExcludingUser(PostStatus.ACTIVE, tag, count, userId);
+    private List<Post> fetchRandomPostEntities(List<String> tags, String userId) {
+        List<String> normalizedTags = normalizeRandomTags(tags);
+        if (normalizedTags.isEmpty()) {
+            return randomPostFinder.findRandomByStatusExcludingUser(
+                    PostStatus.ACTIVE,
+                    DEFAULT_RANDOM_RECOMMENDATION_COUNT,
+                    userId
+            );
         }
-        Map<String, Long> commentCounts = postCommentService.getActiveCommentCounts(
-                posts.stream().map(Post::getId).toList()
+
+        List<Post> taggedPosts = randomPostFinder.findRandomByStatusAndAnyTagExcludingUser(
+                PostStatus.ACTIVE,
+                normalizedTags,
+                TAGGED_RANDOM_RECOMMENDATION_COUNT,
+                userId
         );
-        return posts.stream()
-                .map(post -> PostPreviewResponseDto.from(post, commentCounts.getOrDefault(post.getId(), 0L)))
-                .toList();
+
+        int generalRandomCount = DEFAULT_RANDOM_RECOMMENDATION_COUNT - taggedPosts.size();
+        List<Post> generalRandomPosts = randomPostFinder.findRandomByStatusExcludingUser(
+                PostStatus.ACTIVE,
+                generalRandomCount,
+                userId,
+                taggedPosts.stream().map(Post::getId).toList()
+        );
+
+        List<Post> posts = new ArrayList<>(taggedPosts.size() + generalRandomPosts.size());
+        posts.addAll(taggedPosts);
+        posts.addAll(generalRandomPosts);
+        return posts;
     }
 
-    private String selectTagByPriority(List<String> tags, int index) {
-        if (index < 0 || tags == null || tags.isEmpty()) {
-            return null;
-        }
-
-        List<String> sorted = PostTag.sortByPriority(tags);
-        return index < sorted.size() ? sorted.get(index) : null;
+    private List<String> normalizeRandomTags(List<String> tags) {
+        return PostTag.sortByPriority(tags).stream()
+                .filter(tag -> !tag.isBlank())
+                .toList();
     }
 
     private Post incrementViewsAndGetPost(String postId) {

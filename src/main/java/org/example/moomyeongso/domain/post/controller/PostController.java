@@ -57,17 +57,16 @@ public class PostController {
 
     @Operation(
             summary = "무작위 글 조회",
-            description = "요청한 갯수만큼 무작위 게시글 미리보기 리스트를 반환합니다."
+            description = "태그가 있으면 해당 태그 중 하나를 포함한 글을 먼저 추천하고, 나머지는 전체 글에서 무작위로 추천합니다. 태그가 없으면 전체 글에서 무작위로 추천합니다."
     )
     @GetMapping("/posts/random")
     public ResponseEntity<ApiResponse<PostPreviewListResponse>> getRandomPosts(
-            @RequestParam(defaultValue = "3") int count,
-            @RequestParam(required = false) List<String> tags,
-            @RequestParam(defaultValue = "0") int reroll) {
+            @Parameter(description = "추천에 사용할 태그 목록")
+            @RequestParam(required = false) List<String> tags) {
 
         String userId = SecurityUtils.getCurrentSubject();
         PostPreviewListResponse response =
-                postService.getRandomPostPreviews(count, tags, reroll, userId);
+                postService.getRandomPostPreviews(tags, userId);
         return ApiResponse.success(HttpStatus.OK, response);
     }
     @Operation(
